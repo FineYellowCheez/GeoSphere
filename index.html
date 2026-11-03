@@ -135,7 +135,11 @@
           </div>
           <div class="flex items-center space-x-1">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow"></span>
-            <span class="font-semibold text-emerald-300">Target</span>
+            <span class="font-semibold text-emerald-300">Win</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow"></span>
+            <span class="font-semibold text-blue-400">Answer</span>
           </div>
         </div>
       </div>
@@ -284,6 +288,7 @@
     let currentClueIndex = 1;
     let currentRoundClues = [];
     let gameOver = false;
+    let gameWon = false;
     let cascadingRedSet = new Set();
     let redCascadeInterval = null;
 
@@ -561,6 +566,7 @@
       selectedFeature = null;
       currentClueIndex = 1;
       gameOver = false;
+      gameWon = false;
 
       // Select random target country
       const randIdx = Math.floor(Math.random() * geoData.length);
@@ -605,17 +611,21 @@
             .atmosphereAltitude(0.15)
             .polygonsData(geoData)
             .polygonCapColor(d => {
-              if (gameOver && cascadingRedSet.has(d)) return 'rgba(239, 68, 68, 0.9)';
-              if (targetCountryFeature && d === targetCountryFeature && gameOver && wrongGuesses.size < 5) {
-                return 'rgba(16, 185, 129, 0.9)'; // Target Green on win
+              if (gameOver && d === targetCountryFeature) {
+                return gameWon ? 'rgba(16, 185, 129, 0.95)' : 'rgba(59, 130, 246, 0.95)'; // Green on Win, Vivid Blue on Loss
               }
+              if (gameOver && cascadingRedSet.has(d)) return 'rgba(239, 68, 68, 0.9)';
               if (d === selectedFeature) return 'rgba(245, 158, 11, 0.9)'; // Selected Amber
               if (wrongGuesses.has(d)) return 'rgba(239, 68, 68, 0.8)'; // Wrong Red
               return 'rgba(30, 41, 59, 0.65)'; // Default Slate
             })
             .polygonSideColor(() => 'rgba(15, 23, 42, 0.6)')
             .polygonStrokeColor(() => 'rgba(255, 255, 255, 0.15)')
-            .polygonAltitude(d => d === selectedFeature ? 0.04 : 0.01)
+            .polygonAltitude(d => {
+              if (d === selectedFeature) return 0.04;
+              if (gameOver && d === targetCountryFeature) return 0.05;
+              return 0.01;
+            })
             .onPolygonClick(feature => {
               if (feature) selectCountryAndRotate(feature, false);
             });
@@ -655,6 +665,7 @@
           if (selName === targetName) {
             // WIN CASE
             gameOver = true;
+            gameWon = true;
             sounds.playWin();
             currentClueIndex = 5; // Reveal all clues
             renderClues();
@@ -707,7 +718,13 @@
             } else {
               // LOSS CASE (Out of guesses)
               gameOver = true;
+              gameWon = false;
               triggerLossCascade();
+
+              if (worldGlobe && targetCountryFeature) {
+                const center = getFeatureCentroid(targetCountryFeature);
+                worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.6 }, 1200);
+              }
 
               const winTextContainer = document.getElementById('win-text-container');
               if (winTextContainer) {
