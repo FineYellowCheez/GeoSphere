@@ -240,21 +240,21 @@
 
     // Fallback metadata dictionary
     const COUNTRY_METADATA_FALLBACK = {
-      "BRA": { capital: "Brasília", coast: "Atlantic Coastline", colors: "Green, Yellow, Blue" },
-      "FRA": { capital: "Paris", coast: "Coastal & Maritime", colors: "Blue, White, Red" },
-      "JPN": { capital: "Tokyo", coast: "Island Archipelago", colors: "White & Red" },
-      "EGY": { capital: "Cairo", coast: "Dual Sea Coastline", colors: "Red, White, Black, Gold" },
-      "AUS": { capital: "Canberra", coast: "Continental Island", colors: "Blue, Red, White" },
-      "CAN": { capital: "Ottawa", coast: "Triple Ocean Coast", colors: "Red & White" },
-      "IND": { capital: "New Delhi", coast: "Indian Ocean Coast", colors: "Orange, White, Green, Blue" },
-      "ZAF": { capital: "Pretoria", coast: "Dual Ocean Coast", colors: "Red, Blue, Green, Yellow, Black" },
-      "ITA": { capital: "Rome", coast: "Mediterranean Coast", colors: "Green, White, Red" },
-      "MEX": { capital: "Mexico City", coast: "Pacific & Gulf Coast", colors: "Green, White, Red" },
-      "ARG": { capital: "Buenos Aires", coast: "Atlantic Coastline", colors: "Light Blue, White, Yellow" },
-      "DEU": { capital: "Berlin", coast: "Baltic & North Sea", colors: "Black, Red, Yellow" },
-      "ESP": { capital: "Madrid", coast: "Atlantic & Mediterranean", colors: "Red & Yellow" },
-      "GBR": { capital: "London", coast: "Island Archipelago", colors: "Red, White, Blue" },
-      "NOR": { capital: "Oslo", coast: "Fjord Coastline", colors: "Red, White, Blue" }
+      "BRA": { capital: "Brasília", coast: "Atlantic Coastline", mainColor: "Green" },
+      "FRA": { capital: "Paris", coast: "Coastal & Maritime", mainColor: "Blue" },
+      "JPN": { capital: "Tokyo", coast: "Island Archipelago", mainColor: "White" },
+      "EGY": { capital: "Cairo", coast: "Dual Sea Coastline", mainColor: "Red" },
+      "AUS": { capital: "Canberra", coast: "Continental Island", mainColor: "Blue" },
+      "CAN": { capital: "Ottawa", coast: "Triple Ocean Coast", mainColor: "Red" },
+      "IND": { capital: "New Delhi", coast: "Indian Ocean Coast", mainColor: "Orange" },
+      "ZAF": { capital: "Pretoria", coast: "Dual Ocean Coast", mainColor: "Green" },
+      "ITA": { capital: "Rome", coast: "Mediterranean Coast", mainColor: "Green" },
+      "MEX": { capital: "Mexico City", coast: "Pacific & Gulf Coast", mainColor: "Green" },
+      "ARG": { capital: "Buenos Aires", coast: "Atlantic Coastline", mainColor: "Light Blue" },
+      "DEU": { capital: "Berlin", coast: "Baltic & North Sea", mainColor: "Red" },
+      "ESP": { capital: "Madrid", coast: "Atlantic & Mediterranean", mainColor: "Yellow" },
+      "GBR": { capital: "London", coast: "Island Archipelago", mainColor: "Red" },
+      "NOR": { capital: "Oslo", coast: "Fjord Coastline", mainColor: "Red" }
     };
 
     // Helper: Convert ISO2 to Flag Emoji dynamically
@@ -373,6 +373,11 @@
       const flag = getFlagEmoji(iso2);
       const capName = p.CAPITAL || p.CAP_NAME || fallback.capital || "Major City";
 
+      // Calculate deterministic primary color fallback for all countries
+      const colorOptions = ["Red", "Blue", "Green", "Yellow", "White"];
+      const charSum = cName.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      const fallbackColor = colorOptions[charSum % colorOptions.length];
+
       return {
         name: cName,
         nameLength: cName.length,
@@ -385,7 +390,7 @@
         popTier: getPopTier(p.POP_EST),
         drive: drive,
         tld: tld,
-        colors: fallback.colors || "Multi-colored",
+        mainColor: fallback.mainColor || fallbackColor,
         flag: flag,
         letter: cName[0].toUpperCase()
       };
@@ -403,7 +408,7 @@
 
       // Tier 2 Pool: Slight Details (Single fact per clue)
       const tier2Pool = [
-        { title: "Flag Colors", icon: "fa-palette", text: `Colors: <strong class="text-white">${meta.colors}</strong>` },
+        { title: "Main Flag Color", icon: "fa-palette", text: `A Main Color: <strong class="text-amber-300 font-bold">${meta.mainColor}</strong>` },
         { title: "Population", icon: "fa-users", text: `Pop Bracket: <strong class="text-amber-300">${meta.popTier}</strong>` },
         { title: "Name Length", icon: "fa-font", text: `Name: <strong class="text-amber-300">${meta.nameLength} Letters</strong>` }
       ];
