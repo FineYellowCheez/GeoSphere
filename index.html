@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoSphere - 3D Globe Country Mystery</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Three.js & Globe.gl Standalone Bundle -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.27.2/dist/globe.gl.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #070a12;
+      color: #f1f5f9;
+      overflow-x: hidden;
+    }
+
+    .space-bg {
+      background: radial-gradient(circle at 50% 30%, #17153b 0%, #070a12 85%);
+    }
+
+    /* Glassmorphism styling */
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-panel {
+      background: rgba(10, 15, 30, 0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    /* Lock in button pulse */
+    @keyframes lockGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.6); }
+      50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.95); }
+    }
+    .btn-lock {
+      animation: lockGlow 2s infinite;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.5);
+      border-radius: 4px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="space-bg h-screen w-screen overflow-hidden flex flex-col justify-between select-none p-2">
+
+  <!-- Main Screen Container: Globe Prominent in Center -->
+  <main class="max-w-7xl mx-auto w-full flex-1 min-h-0 flex flex-col">
+
+    <!-- Hero 3D Globe Section (Takes up main dynamic height) -->
+    <div class="relative w-full flex-1 min-h-0 rounded-2xl glass-panel overflow-hidden border border-slate-700/50 shadow-2xl flex flex-col">
+      
+      <!-- Loading Overlay -->
+      <div id="loader" class="absolute inset-0 z-50 glass-panel rounded-2xl flex flex-col items-center justify-center space-y-4 text-center p-6">
+        <div class="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+        <div>
+          <h3 class="text-base font-bold text-slate-200">Generating Interactive 3D World...</h3>
+          <p class="text-xs text-slate-400 mt-1">Loading vector polygon boundaries & satellite maps</p>
+        </div>
+      </div>
+
+      <!-- Top Globe Overlay Bar -->
+      <div class="absolute top-2.5 left-2.5 right-2.5 z-20 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 pointer-events-none">
+        <!-- Brand Title Badge -->
+        <div class="glass-card px-3 py-1 rounded-xl flex items-center space-x-2 text-xs font-black text-amber-400 tracking-wider shadow-md pointer-events-auto">
+          <i class="fa-solid fa-earth-americas text-emerald-400 text-sm"></i>
+          <span class="bg-gradient-to-r from-amber-300 via-emerald-300 to-teal-200 bg-clip-text text-transparent uppercase tracking-widest font-extrabold">GeoSphere</span>
+        </div>
+
+        <div class="glass-card px-2.5 py-1 rounded-xl flex items-center space-x-2 text-[11px] text-slate-300 shadow-md pointer-events-auto hidden md:flex">
+          <i class="fa-solid fa-hand-pointer text-amber-400 animate-bounce"></i>
+          <span>Drag globe &bull; Click country</span>
+        </div>
+
+        <!-- Interactive Search Bar -->
+        <div class="relative pointer-events-auto w-full sm:w-64 max-w-xs mx-auto sm:mx-0">
+          <div class="relative flex items-center">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 text-slate-400 text-xs pointer-events-none"></i>
+            <input 
+              id="search-country-input" 
+              type="text" 
+              placeholder="Search country..." 
+              autocomplete="off"
+              class="w-full bg-slate-900/90 border border-slate-700/80 focus:border-amber-500/80 rounded-xl pl-8 pr-8 py-1.5 text-xs text-white placeholder-slate-400 outline-none transition shadow-xl backdrop-blur-md"
+            />
+            <button id="btn-clear-search" class="absolute right-2.5 text-slate-400 hover:text-white hidden text-xs">
+              <i class="fa-solid fa-circle-xmark"></i>
+            </button>
+          </div>
+          <!-- Auto-complete Search Results Dropdown -->
+          <div id="search-results" class="absolute top-full left-0 right-0 mt-1.5 max-h-52 overflow-y-auto bg-slate-900/95 border border-slate-700 rounded-xl shadow-2xl z-50 hidden backdrop-blur-md divide-y divide-slate-800/60"></div>
+        </div>
+
+        <!-- Globe Color Legend -->
+        <div class="glass-card px-2.5 py-1 rounded-xl flex items-center space-x-3 text-[11px] text-slate-300 shadow-md pointer-events-auto">
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow"></span>
+            <span class="font-semibold text-amber-300">Selected</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
+            <span class="font-semibold text-red-300">Wrong</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow"></span>
+            <span class="font-semibold text-emerald-300">Target</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vertical Clues Sidebar Stacked on the Left Side -->
+      <div class="absolute top-14 left-3 bottom-16 z-20 pointer-events-none flex flex-col justify-center space-y-2 w-44 sm:w-52">
+        <div id="clue-slot-1" class="pointer-events-auto transition-all duration-300"></div>
+        <div id="clue-slot-2" class="pointer-events-auto transition-all duration-300"></div>
+        <div id="clue-slot-3" class="pointer-events-auto transition-all duration-300"></div>
+        <div id="clue-slot-4" class="pointer-events-auto transition-all duration-300"></div>
+        <div id="clue-slot-5" class="pointer-events-auto transition-all duration-300"></div>
+      </div>
+
+      <!-- Globe WebGL Canvas Mount Container -->
+      <div id="globe-container" class="w-full h-full flex-1 cursor-grab active:cursor-grabbing relative"></div>
+
+      <!-- Floating Lock In Green Circle Button (Centered at Bottom of Globe) -->
+      <div id="lock-container" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 transform scale-75 opacity-0 pointer-events-none flex flex-col items-center space-y-2">
+        <div id="selected-country-name" class="glass-panel px-4 py-1.5 rounded-full text-xs font-black text-amber-300 border border-amber-500/50 shadow-2xl max-w-xs truncate text-center tracking-wide">
+          -- Country Selected --
+        </div>
+        <button id="btn-lock-guess" title="Lock in Guess" class="w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-600 via-emerald-500 to-green-400 hover:from-emerald-500 hover:to-green-300 text-white shadow-[0_0_25px_rgba(16,185,129,0.7)] hover:shadow-[0_0_35px_rgba(16,185,129,0.9)] flex items-center justify-center transition-all transform hover:scale-110 active:scale-90 border-2 border-emerald-200">
+          <i class="fa-solid fa-check text-2xl drop-shadow-md"></i>
+        </button>
+      </div>
+
+      <!-- Floating Play Another Button (Centered at Bottom of Globe when Finished) -->
+      <div id="play-another-container" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 transform scale-90 opacity-0 pointer-events-none flex flex-col items-center space-y-2">
+        <div id="win-text-container" class="glass-panel px-4 py-1.5 rounded-full text-xs font-black text-emerald-400 border border-emerald-500/50 shadow-2xl flex items-center space-x-2">
+          <span>🎉 Correct! It's <span id="win-country-name" class="underline font-bold"></span>!</span>
+        </div>
+        <button id="btn-play-another" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-extrabold shadow-[0_0_25px_rgba(16,185,129,0.7)] hover:shadow-[0_0_35px_rgba(16,185,129,0.9)] flex items-center space-x-2 transition-all transform hover:scale-105 active:scale-95 border border-emerald-200">
+          <i class="fa-solid fa-rotate-right"></i>
+          <span>Play Another</span>
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Audio Synthesizer Script -->
+  <script>
+    class SoundManager {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+      }
+      playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.1) {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {}
+      }
+      playSelect() { this.playTone(520, 'sine', 0.08, 0.08); }
+      playLockIn() { this.playTone(330, 'triangle', 0.15, 0.12); }
+      playWrong() {
+        if (this.muted) return;
+        this.playTone(180, 'sawtooth', 0.25, 0.12);
+        setTimeout(() => this.playTone(140, 'sawtooth', 0.3, 0.12), 150);
+      }
+      playWin() {
+        if (this.muted) return;
+        const notes = [440, 554.37, 659.25, 880];
+        notes.forEach((n, i) => {
+          setTimeout(() => this.playTone(n, 'triangle', 0.3, 0.15), i * 120);
+        });
+      }
+    }
+    const sounds = new SoundManager();
+  </script>
+
+  <!-- Main Game Logic Script -->
+  <script>
+    // Left-hand driving ISO codes for accurate clue extraction
+    const LEFT_DRIVE_ISO = new Set([
+      "GB", "UK", "AU", "JP", "IN", "ZA", "NZ", "IE", "TH", "MY", "ID", "PK", 
+      "BD", "LK", "KE", "JM", "CY", "MT", "SG", "UG", "TZ", "ZM", "ZW", "BW", 
+      "NA", "SZ", "LS", "MW", "MZ", "TT", "BB", "BS", "GD", "AG", "KN", "LC", "VC"
+    ]);
+
+    // Fallback metadata dictionary
+    const COUNTRY_METADATA_FALLBACK = {
+      "BRA": { capital: "Brasília", coast: "Atlantic Coastline", colors: "Green, Yellow, Blue" },
+      "FRA": { capital: "Paris", coast: "Coastal & Maritime", colors: "Blue, White, Red" },
+      "JPN": { capital: "Tokyo", coast: "Island Archipelago", colors: "White & Red" },
+      "EGY": { capital: "Cairo", coast: "Dual Sea Coastline", colors: "Red, White, Black, Gold" },
+      "AUS": { capital: "Canberra", coast: "Continental Island", colors: "Blue, Red, White" },
+      "CAN": { capital: "Ottawa", coast: "Triple Ocean Coast", colors: "Red & White" },
+      "IND": { capital: "New Delhi", coast: "Indian Ocean Coast", colors: "Orange, White, Green, Blue" },
+      "ZAF": { capital: "Pretoria", coast: "Dual Ocean Coast", colors: "Red, Blue, Green, Yellow, Black" },
+      "ITA": { capital: "Rome", coast: "Mediterranean Coast", colors: "Green, White, Red" },
+      "MEX": { capital: "Mexico City", coast: "Pacific & Gulf Coast", colors: "Green, White, Red" },
+      "ARG": { capital: "Buenos Aires", coast: "Atlantic Coastline", colors: "Light Blue, White, Yellow" },
+      "DEU": { capital: "Berlin", coast: "Baltic & North Sea", colors: "Black, Red, Yellow" },
+      "ESP": { capital: "Madrid", coast: "Atlantic & Mediterranean", colors: "Red & Yellow" },
+      "GBR": { capital: "London", coast: "Island Archipelago", colors: "Red, White, Blue" },
+      "NOR": { capital: "Oslo", coast: "Fjord Coastline", colors: "Red, White, Blue" }
+    };
+
+    // Helper: Convert ISO2 to Flag Emoji dynamically
+    function getFlagEmoji(iso2) {
+      if (!iso2 || iso2.length !== 2 || iso2 === '-9') return '🚩';
+      try {
+        return String.fromCodePoint(...iso2.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0)));
+      } catch(e) {
+        return '🚩';
+      }
+    }
+
+    // Helper: Calculate Population Tier
+    function getPopTier(pop) {
+      if (!pop || pop <= 0) return "< 5 Million";
+      if (pop > 1000000000) return "> 1 Billion";
+      if (pop > 300000000) return "300M - 1 Billion";
+      if (pop > 100000000) return "100M - 300M";
+      if (pop > 50000000) return "50M - 100M";
+      if (pop > 10000000) return "10M - 50M";
+      return "< 10 Million";
+    }
+
+    // Game State
+    let worldGlobe = null;
+    let geoData = [];
+    let targetCountryFeature = null;
+    let targetMeta = null;
+    let selectedFeature = null;
+    let wrongGuesses = new Set();
+    let currentClueIndex = 1;
+    let currentRoundClues = [];
+    let gameOver = false;
+    let cascadingRedSet = new Set();
+    let redCascadeInterval = null;
+
+    // Helper: Calculate centroid of feature for camera rotation
+    function getFeatureCentroid(feature) {
+      const p = feature.properties || {};
+      if (p.LABEL_Y !== undefined && p.LABEL_X !== undefined && p.LABEL_Y !== 0) {
+        return { lat: Number(p.LABEL_Y), lng: Number(p.LABEL_X) };
+      }
+      if (p.LAT !== undefined && p.LON !== undefined && p.LAT !== 0) {
+        return { lat: Number(p.LAT), lng: Number(p.LON) };
+      }
+      
+      let sumLat = 0, sumLng = 0, count = 0;
+      let polygons = [];
+      const geom = feature.geometry;
+      if (geom.type === 'Polygon') polygons = [geom.coordinates];
+      else if (geom.type === 'MultiPolygon') polygons = geom.coordinates;
+
+      polygons.forEach(poly => {
+        poly[0].forEach(pt => {
+          sumLng += pt[0];
+          sumLat += pt[1];
+          count++;
+        });
+      });
+
+      if (count > 0) {
+        return { lat: sumLat / count, lng: sumLng / count };
+      }
+      return { lat: 0, lng: 0 };
+    }
+
+    // Select country & rotate globe view smoothly
+    function selectCountryAndRotate(feature, shouldRotate = true) {
+      if (!feature || gameOver) return;
+      sounds.playSelect();
+      selectedFeature = feature;
+      if (worldGlobe) worldGlobe.polygonsData(geoData);
+
+      const countryName = feature.properties.NAME || feature.properties.name || feature.properties.ADMIN;
+      const nameEl = document.getElementById('selected-country-name');
+      if (nameEl) nameEl.textContent = countryName;
+
+      const lockBox = document.getElementById('lock-container');
+      if (lockBox) {
+        lockBox.classList.remove('scale-75', 'opacity-0', 'pointer-events-none');
+        lockBox.classList.add('scale-100', 'opacity-100');
+      }
+
+      if (shouldRotate && worldGlobe) {
+        const center = getFeatureCentroid(feature);
+        worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.6 }, 1200);
+      }
+    }
+
+    // Universal Country Metadata Extractor
+    function extractCountryMeta(feature) {
+      const p = feature.properties || {};
+      const cName = p.NAME || p.name || p.NAME_LONG || p.ADMIN || "Unknown Country";
+      
+      let iso3 = p.ISO_A3 || p.iso_a3 || p.ADM0_A3 || p.WB_A3 || "UNK";
+      let iso2 = p.ISO_A2 || p.iso_a2 || p.POSTAL || p.WB_A2;
+      
+      const isoFixes = {
+        "France": "FR", "Norway": "NO", "Somaliland": "SO", "Kosovo": "XK", 
+        "Northern Cyprus": "CY", "Western Sahara": "EH"
+      };
+      if (isoFixes[cName]) iso2 = isoFixes[cName];
+      if (!iso2 || iso2 === '-99' || iso2.length !== 2) iso2 = iso3.slice(0, 2);
+
+      const fallback = COUNTRY_METADATA_FALLBACK[iso3] || {};
+      
+      const lat = p.LABEL_Y !== undefined ? p.LABEL_Y : (p.LAT || 0);
+      const lon = p.LABEL_X !== undefined ? p.LABEL_X : (p.LON || 0);
+      const latText = lat >= 0 ? "Northern" : "Southern";
+      const lonText = lon >= 0 ? "Eastern" : "Western";
+      const hemi = `${latText} & ${lonText}`;
+
+      const drive = LEFT_DRIVE_ISO.has(iso2.toUpperCase()) ? "Left" : "Right";
+      const tld = "." + iso2.toLowerCase();
+      const flag = getFlagEmoji(iso2);
+      const capName = p.CAPITAL || p.CAP_NAME || fallback.capital || "Major City";
+
+      return {
+        name: cName,
+        nameLength: cName.length,
+        capital: capName,
+        capitalLetter: capName[0].toUpperCase(),
+        continent: p.CONTINENT || p.REGION_UN || fallback.continent || "Global",
+        subregion: p.SUBREGION || p.REGION_WB || p.CONTINENT || "Global",
+        hemisphere: hemi,
+        coast: fallback.coast || (p.TINY > 0 ? "Island Nation" : "Coastal / Continental"),
+        popTier: getPopTier(p.POP_EST),
+        drive: drive,
+        tld: tld,
+        colors: fallback.colors || "Multi-colored",
+        flag: flag,
+        letter: cName[0].toUpperCase()
+      };
+    }
+
+    // Generate Randomized Dynamic Clues (Progressive Difficulty Tier 1 -> 5)
+    function generateRoundClues(meta) {
+      // Tier 1 Pool: Subtle / General (Single fact per clue)
+      const tier1Pool = [
+        { title: "Driving Side", icon: "fa-car", text: `Drives on: <strong class="text-white">${meta.drive}</strong>` },
+        { title: "Web Domain", icon: "fa-at", text: `Domain: <strong class="text-amber-300 font-mono">${meta.tld}</strong>` },
+        { title: "Hemisphere", icon: "fa-compass", text: `Location: <strong class="text-amber-300">${meta.hemisphere}</strong>` },
+        { title: "Coastline", icon: "fa-water", text: `Territory: <strong class="text-amber-300">${meta.coast}</strong>` }
+      ];
+
+      // Tier 2 Pool: Slight Details (Single fact per clue)
+      const tier2Pool = [
+        { title: "Flag Colors", icon: "fa-palette", text: `Colors: <strong class="text-white">${meta.colors}</strong>` },
+        { title: "Population", icon: "fa-users", text: `Pop Bracket: <strong class="text-amber-300">${meta.popTier}</strong>` },
+        { title: "Name Length", icon: "fa-font", text: `Name: <strong class="text-amber-300">${meta.nameLength} Letters</strong>` }
+      ];
+
+      // Tier 3 Pool: Moderate Hints (Single fact per clue)
+      const tier3Pool = [
+        { title: "Subregion", icon: "fa-earth-americas", text: `Region: <strong class="text-amber-300">${meta.subregion}</strong>` },
+        { title: "Capital Initial", icon: "fa-city", text: `Capital Initial: <strong class="text-amber-400 font-extrabold">'${meta.capitalLetter}'</strong>` },
+        { title: "Country Initial", icon: "fa-arrow-down-a-z", text: `Country Initial: <strong class="text-amber-400 font-extrabold">'${meta.letter}'</strong>` }
+      ];
+
+      // Tier 4 Pool: Strong Giveaways (Single fact per clue)
+      const tier4Pool = [
+        { title: "Continent", icon: "fa-globe", text: `Continent: <strong class="text-white font-bold">${meta.continent}</strong>` },
+        { title: "Capital City", icon: "fa-building-columns", text: `Capital City: <strong class="text-amber-300 font-bold">${meta.capital}</strong>` },
+        { title: "Flag Emoji", icon: "fa-flag", text: `Flag: <span class="text-base">${meta.flag}</span>` }
+      ];
+
+      const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+      const clue1 = getRandom(tier1Pool);
+      const clue2 = getRandom(tier2Pool);
+      const clue3 = getRandom(tier3Pool);
+      const clue4 = getRandom(tier4Pool);
+
+      // Clue #5: 50% chance of Shape Silhouette outline. If not shape, pick another unused strong giveaway hint.
+      const includeShape = Math.random() < 0.5;
+      let clue5;
+
+      if (includeShape) {
+        clue5 = {
+          title: "Shape Outline",
+          icon: "fa-draw-polygon",
+          isSilhouette: true
+        };
+      } else {
+        const remainingTier4 = tier4Pool.filter(c => c.title !== clue4.title);
+        clue5 = getRandom(remainingTier4);
+      }
+
+      return [
+        { num: 1, ...clue1, slotId: 'clue-slot-1' },
+        { num: 2, ...clue2, slotId: 'clue-slot-2' },
+        { num: 3, ...clue3, slotId: 'clue-slot-3' },
+        { num: 4, ...clue4, slotId: 'clue-slot-4' },
+        { num: 5, ...clue5, slotId: 'clue-slot-5' }
+      ];
+    }
+
+    // Render Silhouette Canvas for Clue 5
+    function drawSilhouette(canvas, feature) {
+      if (!canvas || !feature || !feature.geometry) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      let polygons = [];
+      const geom = feature.geometry;
+      if (geom.type === 'Polygon') polygons = [geom.coordinates];
+      else if (geom.type === 'MultiPolygon') polygons = geom.coordinates;
+      
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      polygons.forEach(poly => {
+        poly[0].forEach(pt => {
+          if (pt[0] < minX) minX = pt[0];
+          if (pt[0] > maxX) maxX = pt[0];
+          if (pt[1] < minY) minY = pt[1];
+          if (pt[1] > maxY) maxY = pt[1];
+        });
+      });
+      
+      const w = maxX - minX || 1;
+      const h = maxY - minY || 1;
+      const padding = 6;
+      const scale = Math.min((canvas.width - padding * 2) / w, (canvas.height - padding * 2) / h);
+      
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      polygons.forEach(poly => {
+        poly.forEach(ring => {
+          ring.forEach((pt, i) => {
+            const x = padding + (pt[0] - minX) * scale;
+            const y = canvas.height - (padding + (pt[1] - minY) * scale);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          });
+        });
+      });
+      ctx.fill();
+    }
+
+    // Render Clues Floating in Sidebar
+    function renderClues() {
+      currentRoundClues.forEach(clue => {
+        const slot = document.getElementById(clue.slotId);
+        if (!slot) return;
+
+        if (clue.num <= currentClueIndex) {
+          if (clue.isSilhouette) {
+            slot.innerHTML = `
+              <div class="glass-card p-2 rounded-xl border border-amber-500/40 shadow-lg text-[11px] animate-fade-in">
+                <div class="flex items-center space-x-1.5 text-amber-400 font-bold mb-1">
+                  <i class="fa-solid ${clue.icon} text-xs"></i>
+                  <span>Clue #${clue.num}: ${clue.title}</span>
+                </div>
+                <div class="flex justify-center bg-slate-900/80 rounded-lg p-1 border border-slate-700/50">
+                  <canvas id="silhouette-canvas" width="120" height="36"></canvas>
+                </div>
+              </div>
+            `;
+            setTimeout(() => {
+              const cvs = document.getElementById('silhouette-canvas');
+              if (cvs && targetCountryFeature) drawSilhouette(cvs, targetCountryFeature);
+            }, 50);
+          } else {
+            slot.innerHTML = `
+              <div class="glass-card p-2 rounded-xl border border-indigo-500/30 shadow-lg text-[11px] animate-fade-in">
+                <div class="flex items-center space-x-1.5 text-indigo-300 font-bold mb-0.5">
+                  <i class="fa-solid ${clue.icon} text-xs text-amber-400"></i>
+                  <span>Clue #${clue.num}: ${clue.title}</span>
+                </div>
+                <div class="text-slate-200 text-[10px] pl-4">${clue.text}</div>
+              </div>
+            `;
+          }
+        } else {
+          slot.innerHTML = `
+            <div class="glass-card px-2.5 py-1.5 rounded-xl border border-slate-800 text-[10px] text-slate-500 flex items-center space-x-1.5 opacity-60">
+              <i class="fa-solid fa-lock text-[9px]"></i>
+              <span>Clue #${clue.num} Locked</span>
+            </div>
+          `;
+        }
+      });
+    }
+
+    // Trigger Wave Animation turning all countries red on loss
+    function triggerLossCascade() {
+      cascadingRedSet.clear();
+      let index = 0;
+      if (redCascadeInterval) clearInterval(redCascadeInterval);
+      
+      redCascadeInterval = setInterval(() => {
+        if (index >= geoData.length) {
+          clearInterval(redCascadeInterval);
+          return;
+        }
+        for (let b = 0; b < 6 && index < geoData.length; b++, index++) {
+          cascadingRedSet.add(geoData[index]);
+        }
+        if (worldGlobe) worldGlobe.polygonsData(geoData);
+      }, 30);
+    }
+
+    // Reset Round for New Game
+    function startNewRound() {
+      if (!geoData.length) return;
+      if (redCascadeInterval) clearInterval(redCascadeInterval);
+      cascadingRedSet.clear();
+      wrongGuesses.clear();
+      selectedFeature = null;
+      currentClueIndex = 1;
+      gameOver = false;
+
+      // Select random target country
+      const randIdx = Math.floor(Math.random() * geoData.length);
+      targetCountryFeature = geoData[randIdx];
+      targetMeta = extractCountryMeta(targetCountryFeature);
+
+      // Generate hints
+      currentRoundClues = generateRoundClues(targetMeta);
+
+      // Hide lock & play-another buttons
+      const lockBox = document.getElementById('lock-container');
+      if (lockBox) {
+        lockBox.classList.remove('scale-100', 'opacity-100');
+        lockBox.classList.add('scale-75', 'opacity-0', 'pointer-events-none');
+      }
+
+      const playAnotherBox = document.getElementById('play-another-container');
+      if (playAnotherBox) {
+        playAnotherBox.classList.remove('scale-100', 'opacity-100');
+        playAnotherBox.classList.add('scale-90', 'opacity-0', 'pointer-events-none');
+      }
+
+      renderClues();
+      if (worldGlobe) worldGlobe.polygonsData(geoData);
+    }
+
+    // Initialize 3D Globe App
+    function initApp() {
+      const globeDiv = document.getElementById('globe-container');
+
+      fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
+        .then(res => res.json())
+        .then(countries => {
+          geoData = countries.features.filter(f => f.properties.NAME !== 'Antarctica');
+
+          // Initialize Globe.gl
+          worldGlobe = Globe()(globeDiv)
+            .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
+            .backgroundColor('rgba(0,0,0,0)')
+            .showAtmosphere(true)
+            .atmosphereColor('#3a86ff')
+            .atmosphereAltitude(0.15)
+            .polygonsData(geoData)
+            .polygonCapColor(d => {
+              if (gameOver && cascadingRedSet.has(d)) return 'rgba(239, 68, 68, 0.9)';
+              if (targetCountryFeature && d === targetCountryFeature && gameOver && wrongGuesses.size < 5) {
+                return 'rgba(16, 185, 129, 0.9)'; // Target Green on win
+              }
+              if (d === selectedFeature) return 'rgba(245, 158, 11, 0.9)'; // Selected Amber
+              if (wrongGuesses.has(d)) return 'rgba(239, 68, 68, 0.8)'; // Wrong Red
+              return 'rgba(30, 41, 59, 0.65)'; // Default Slate
+            })
+            .polygonSideColor(() => 'rgba(15, 23, 42, 0.6)')
+            .polygonStrokeColor(() => 'rgba(255, 255, 255, 0.15)')
+            .polygonAltitude(d => d === selectedFeature ? 0.04 : 0.01)
+            .onPolygonClick(feature => {
+              if (feature) selectCountryAndRotate(feature, false);
+            });
+
+          // Enable OrbitControls
+          worldGlobe.controls().autoRotate = false;
+          worldGlobe.controls().enableZoom = true;
+
+          // Hide Loader
+          const loader = document.getElementById('loader');
+          if (loader) loader.classList.add('hidden');
+
+          // Start First Round
+          startNewRound();
+        })
+        .catch(err => {
+          console.error("Failed to load country GeoJSON", err);
+          const loader = document.getElementById('loader');
+          if (loader) {
+            loader.innerHTML = `
+              <div class="text-red-400 font-bold">Failed to load world map data.</div>
+              <button onclick="location.reload()" class="px-4 py-2 bg-slate-800 text-white text-xs rounded-xl mt-2 border border-slate-700">Retry</button>
+            `;
+          }
+        });
+
+      // Handle Lock In Button Click
+      const btnLock = document.getElementById('btn-lock-guess');
+      if (btnLock) {
+        btnLock.addEventListener('click', () => {
+          if (!selectedFeature || gameOver) return;
+          sounds.playLockIn();
+
+          const selName = selectedFeature.properties.NAME || selectedFeature.properties.name || selectedFeature.properties.ADMIN;
+          const targetName = targetMeta.name;
+
+          if (selName === targetName) {
+            // WIN CASE
+            gameOver = true;
+            sounds.playWin();
+            currentClueIndex = 5; // Reveal all clues
+            renderClues();
+            worldGlobe.polygonsData(geoData);
+
+            if (window.confetti) {
+              confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            }
+
+            // Hide Lock In, Show Play Another
+            const lockBox = document.getElementById('lock-container');
+            if (lockBox) {
+              lockBox.classList.remove('scale-100', 'opacity-100');
+              lockBox.classList.add('scale-75', 'opacity-0', 'pointer-events-none');
+            }
+
+            const winNameEl = document.getElementById('win-country-name');
+            if (winNameEl) winNameEl.textContent = targetName;
+
+            const winTextContainer = document.getElementById('win-text-container');
+            if (winTextContainer) {
+              winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-emerald-400 border border-emerald-500/50 shadow-2xl flex items-center space-x-2";
+              winTextContainer.innerHTML = `<span>🎉 Correct! It's <span class="underline font-bold">${targetName}</span>!</span>`;
+            }
+
+            const playAnotherBox = document.getElementById('play-another-container');
+            if (playAnotherBox) {
+              playAnotherBox.classList.remove('scale-90', 'opacity-0', 'pointer-events-none');
+              playAnotherBox.classList.add('scale-100', 'opacity-100');
+            }
+
+          } else {
+            // INCORRECT GUESS
+            sounds.playWrong();
+            wrongGuesses.add(selectedFeature);
+            const prevSelected = selectedFeature;
+            selectedFeature = null;
+
+            // Hide Lock In
+            const lockBox = document.getElementById('lock-container');
+            if (lockBox) {
+              lockBox.classList.remove('scale-100', 'opacity-100');
+              lockBox.classList.add('scale-75', 'opacity-0', 'pointer-events-none');
+            }
+
+            if (currentClueIndex < 5) {
+              currentClueIndex++;
+              renderClues();
+              worldGlobe.polygonsData(geoData);
+            } else {
+              // LOSS CASE (Out of guesses)
+              gameOver = true;
+              triggerLossCascade();
+
+              const winTextContainer = document.getElementById('win-text-container');
+              if (winTextContainer) {
+                winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
+                winTextContainer.innerHTML = `<span>❌ Out of clues! It was <span class="underline font-bold">${targetName}</span></span>`;
+              }
+
+              const playAnotherBox = document.getElementById('play-another-container');
+              if (playAnotherBox) {
+                playAnotherBox.classList.remove('scale-90', 'opacity-0', 'pointer-events-none');
+                playAnotherBox.classList.add('scale-100', 'opacity-100');
+              }
+            }
+          }
+        });
+      }
+
+      // Handle Play Another Button
+      const btnPlayAnother = document.getElementById('btn-play-another');
+      if (btnPlayAnother) {
+        btnPlayAnother.addEventListener('click', () => {
+          startNewRound();
+        });
+      }
+
+      // Handle Country Search Input
+      const searchInput = document.getElementById('search-country-input');
+      const searchResults = document.getElementById('search-results');
+      const clearSearchBtn = document.getElementById('btn-clear-search');
+
+      if (searchInput && searchResults) {
+        searchInput.addEventListener('input', (e) => {
+          const val = e.target.value.trim().toLowerCase();
+          if (clearSearchBtn) clearSearchBtn.classList.toggle('hidden', val.length === 0);
+
+          if (val.length < 1) {
+            searchResults.classList.add('hidden');
+            return;
+          }
+
+          const matches = geoData.filter(f => {
+            const name = (f.properties.NAME || f.properties.name || f.properties.ADMIN || '').toLowerCase();
+            return name.includes(val);
+          }).slice(0, 8);
+
+          if (matches.length > 0) {
+            searchResults.innerHTML = matches.map(f => {
+              const name = f.properties.NAME || f.properties.name || f.properties.ADMIN;
+              return `<div class="px-3 py-2 hover:bg-amber-500/20 text-xs text-slate-200 cursor-pointer flex items-center space-x-2 transition" data-name="${name}">
+                <i class="fa-solid fa-location-dot text-amber-400 text-[10px]"></i>
+                <span>${name}</span>
+              </div>`;
+            }).join('');
+            searchResults.classList.remove('hidden');
+
+            searchResults.querySelectorAll('[data-name]').forEach(item => {
+              item.addEventListener('click', () => {
+                const countryName = item.getAttribute('data-name');
+                const matchedFeature = geoData.find(f => (f.properties.NAME || f.properties.name || f.properties.ADMIN) === countryName);
+                if (matchedFeature) {
+                  selectCountryAndRotate(matchedFeature, true);
+                  searchInput.value = countryName;
+                  searchResults.classList.add('hidden');
+                }
+              });
+            });
+          } else {
+            searchResults.classList.add('hidden');
+          }
+        });
+
+        if (clearSearchBtn) {
+          clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            searchResults.classList.add('hidden');
+            clearSearchBtn.classList.add('hidden');
+          });
+        }
+      }
+
+      // Window Resize Listener
+      window.addEventListener('resize', () => {
+        if (worldGlobe) {
+          worldGlobe.width(globeDiv.clientWidth);
+          worldGlobe.height(globeDiv.clientHeight);
+        }
+      });
+    }
+
+    window.onload = initApp;
+  </script>
+</body>
+</html>
