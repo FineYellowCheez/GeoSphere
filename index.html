@@ -141,6 +141,13 @@
                 <div class="text-[10px] font-normal text-slate-400">Pick country & pinpoint city</div>
               </div>
             </button>
+            <button id="mode-trivia" class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1">
+              <i class="fa-solid fa-graduation-cap text-purple-400 text-sm"></i>
+              <div>
+                <div>Trivia Guesser</div>
+                <div class="text-[10px] font-normal text-slate-400">4 questions, 2 attempts each</div>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -278,22 +285,138 @@
     let redCascadeInterval = null;
     let gameOver = false;
     let gameWon = false;
-    let gameMode = 'guesser'; // 'guesser', 'hotcold', 'city'
+    let gameMode = 'guesser'; // 'guesser', 'hotcold', 'city', 'trivia'
     let cityStep = 'select_country'; // 'select_country', 'pinpoint', 'result'
     let placedPin = null;
     let targetCity = null;
+
+    // Trivia Guesser State Variables
+    let triviaQuestionIndex = 0; // 0 to 3 (4 questions per game)
+    let triviaScore = 0; // Out of 4
+    let triviaAttemptsLeft = 2; // 2 attempts per question
+    let triviaQuestionsForRound = []; // Holds 4 question objects for the game
+    let triviaWrongAttemptsThisQuestion = new Set(); // Wrong country guesses for current question
 
     const LEFT_DRIVE_ISO = new Set([
       "GB", "UK", "AU", "JP", "IN", "ZA", "NZ", "IE", "TH", "MY", "ID", "PK", 
       "BD", "LK", "KE", "JM", "CY", "MT", "SG", "UG", "TZ", "ZM", "ZW", "BW", 
       "NA", "SZ", "LS", "MW", "MZ", "TT", "BB", "BS", "GD", "AG", "KN", "LC", "VC"
     ]);
+    // Curated Unique Trivia Statements for Nations
+    const CURATED_TRIVIA_DATABASE = {
+      "USA": [
+        "Which country is home to the Grand Canyon, Yellowstone, and 50 federal states?",
+        "Which nation has Washington, D.C. as its capital city?",
+        "Which country's film industry is globally centered in Hollywood, California?",
+        "Which nation uses the top-level internet domain extension '.us' and drives on the right?"
+      ],
+      "FRA": [
+        "Which nation is famous for the Eiffel Tower, Louvre Museum, and Notre-Dame Cathedral?",
+        "Which country's official capital city is Paris?",
+        "Which European nation is famed for its Bordeaux wine regions and French Riviera?",
+        "Which country features a vertical Tricolour flag of Blue, White, and Red?"
+      ],
+      "JPN": [
+        "Which island nation is famous for Mount Fuji, cherry blossoms, and Shinkansen bullet trains?",
+        "Which country's official capital city is Tokyo?",
+        "Which East Asian nation is the global birthplace of Anime, Manga, and Nintendo?",
+        "Which country drives on the left and uses the top-level internet domain '.jp'?"
+      ],
+      "DEU": [
+        "Which European country is famous for its speed-limitless Autobahn and Munich Oktoberfest?",
+        "Which country's official capital city is Berlin?",
+        "Which nation was famously divided by a Cold War wall until its fall in 1989?",
+        "Which Central European nation uses the internet domain extension '.de'?"
+      ],
+      "EGY": [
+        "Which country is world-renowned for the Great Pyramids of Giza and the Sphinx?",
+        "Which African nation's civilization developed along the historic River Nile?",
+        "Which country links Northeast Africa to the Middle East across the Sinai Peninsula?",
+        "Which country's capital city is Cairo?"
+      ],
+      "ITA": [
+        "Which Mediterranean nation is shaped like a boot and home to the ancient Colosseum?",
+        "Which country's official capital city is Rome?",
+        "Which nation surrounds the independent microstates of San Marino and Vatican City?",
+        "Which European nation is the culinary birthplace of Pizza and Pasta?"
+      ],
+      "GBR": [
+        "Which island nation is home to Big Ben, Buckingham Palace, and Stonehenge?",
+        "Which country's official capital city is London?",
+        "Which kingdom comprises England, Scotland, Wales, and Northern Ireland?",
+        "Which nation uses the top-level domain '.uk' and drives on the left side of the road?"
+      ],
+      "BRA": [
+        "Which nation is home to the vast Amazon Rainforest and the iconic Christ the Redeemer statue?",
+        "Which South American country's official capital city is Brasília?",
+        "Which nation is famous for the Rio de Janeiro Carnival and winning 5 FIFA World Cups?",
+        "Which country is the largest Portuguese-speaking nation in the world?"
+      ],
+      "AUS": [
+        "Which continental nation is home to the Sydney Opera House and the Great Barrier Reef?",
+        "Which country's official capital city is Canberra?",
+        "Which nation is famous for native marsupials like Kangaroos, Koalas, and Wombats?",
+        "Which nation occupies an entire continent surrounded by the Indian and Pacific Oceans?"
+      ],
+      "CAN": [
+        "Which nation has the longest coastline in the world and uses the Maple Leaf on its flag?",
+        "Which country's official capital city is Ottawa?",
+        "Which North American nation is famous for Ice Hockey, Niagara Falls, and Maple Syrup?",
+        "Which country spans 6 time zones between the Atlantic, Pacific, and Arctic Oceans?"
+      ],
+      "IND": [
+        "Which Asian nation is home to the marble Taj Mahal monument in Agra?",
+        "Which country's official capital city is New Delhi?",
+        "Which country is the most populous nation on Earth and birthplace of Yoga?",
+        "Which nation features a tricolor flag with a navy blue Ashoka Chakra wheel in the center?"
+      ],
+      "CHN": [
+        "Which nation built the ancient Great Wall spanning thousands of miles across northern ridges?",
+        "Which country's official capital city is Beijing?",
+        "Which East Asian nation is famous for Giant Pandas, the Forbidden City, and Terracotta Warriors?",
+        "Which country uses the top-level domain extension '.cn'?"
+      ]
+    };
 
-    // Helper: Standardized Country Name Extraction
+    // Dynamic Generator to guarantee AT LEAST 4 distinct Trivia Questions for EVERY SINGLE Country
+    function getTriviaQuestionsForCountry(feature) {
+      const meta = extractCountryMeta(feature);
+      const cName = meta.name;
+      const iso3 = getCountryIso3(feature);
+
+      let questions = [];
+
+      // Add curated questions if available
+      if (CURATED_TRIVIA_DATABASE[iso3] && CURATED_TRIVIA_DATABASE[iso3].length >= 4) {
+        questions = [...CURATED_TRIVIA_DATABASE[iso3]];
+      }
+
+      // Guarantee at least 4 questions for EVERY country using structured metadata templates
+      const fallbackQuestions = [
+        `Which country's official capital city is ${meta.capital}?`,
+        `Which nation located in ${meta.continent} (${meta.subregion}) uses the internet domain extension '${meta.tld}'?`,
+        `Which country drives on the ${meta.drive} side of the road and is located in the ${meta.hemisphere} hemisphere?`,
+        `Which country features ${meta.mainColor} on its flag, is represented by ${meta.flag}, and has a name length of ${meta.nameLength} letters?`
+      ];
+
+      // Fill in any remaining slots up to at least 4
+      for (let fq of fallbackQuestions) {
+        if (questions.length < 4 && !questions.includes(fq)) {
+          questions.push(fq);
+        }
+      }
+
+      return questions.map(qText => ({
+        questionText: qText,
+        feature: feature,
+        meta: meta
+      }));
+    }
+
     function getFeatureName(feature) {
       if (!feature || !feature.properties) return "Unknown Country";
       const p = feature.properties;
-      return p.NAME || p.name || p.ADMIN || p.NAME_LONG || p.SOVEREIGNT || p.FORMAL_EN || "Unknown Country";
+      return p.NAME || p.name || p.ADMIN || p.SOVEREIGNT || p.NAME_LONG || "Unknown Country";
     }
 
     function getFlagEmoji(iso2) {
@@ -1469,6 +1592,21 @@
             <span class="font-semibold text-emerald-300">Win</span>
           </div>
         `;
+      } else if (gameMode === 'trivia') {
+        legendDiv.innerHTML = `
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow"></span>
+            <span class="font-semibold text-amber-300">Selected</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
+            <span class="font-semibold text-red-300">Wrong Try</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block shadow"></span>
+            <span class="font-semibold text-purple-300">Trivia Target</span>
+          </div>
+        `;
       } else {
         legendDiv.innerHTML = `
           <div class="flex items-center space-x-1">
@@ -1481,6 +1619,44 @@
           </div>
         `;
       }
+    }
+
+    function renderTriviaSidebar() {
+      const container = document.getElementById('sidebar-container');
+      if (!container) return;
+
+      const currentQ = triviaQuestionsForRound[triviaQuestionIndex];
+      const qText = currentQ ? currentQ.questionText : "Question loading...";
+
+      const attemptBadgeHtml = triviaAttemptsLeft === 2 
+        ? `<span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono">2 / 2 Tries</span>`
+        : `<span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-mono animate-pulse">1 / 2 Tries</span>`;
+
+      container.innerHTML = `
+        <div class="glass-card p-3 rounded-xl border border-purple-500/40 text-xs shadow-md animate-fade-in space-y-2.5 pointer-events-auto">
+          <div class="flex items-center justify-between">
+            <div class="font-bold text-purple-300 flex items-center space-x-1.5">
+              <i class="fa-solid fa-graduation-cap text-purple-400 text-sm"></i>
+              <span>Trivia Guesser</span>
+            </div>
+            <div class="text-[10px] font-extrabold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30">
+              Q ${triviaQuestionIndex + 1} / 4
+            </div>
+          </div>
+
+          <div class="glass-card p-2.5 rounded-lg border border-purple-500/30 bg-slate-900/60 text-slate-200 text-xs leading-relaxed font-medium shadow-inner">
+            "${qText}"
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] pt-1">
+            <div class="flex items-center space-x-1 text-slate-300">
+              <i class="fa-solid fa-trophy text-amber-400"></i>
+              <span>Score: <strong class="text-emerald-400 font-mono">${triviaScore}</strong> / 4</span>
+            </div>
+            <div>${attemptBadgeHtml}</div>
+          </div>
+        </div>
+      `;
     }
 
     function renderCitySidebar(dist = null) {
@@ -1620,11 +1796,31 @@
         worldGlobe.arcsData([]);
       }
 
-      const randIdx = Math.floor(Math.random() * geoData.length);
-      targetCountryFeature = geoData[randIdx];
-      targetMeta = extractCountryMeta(targetCountryFeature);
+      if (gameMode === 'trivia') {
+        triviaQuestionIndex = 0;
+        triviaScore = 0;
+        triviaAttemptsLeft = 2;
+        triviaWrongAttemptsThisQuestion.clear();
+        triviaQuestionsForRound = [];
 
-      currentRoundClues = generateRoundClues(targetMeta);
+        // Pick 4 distinct random target countries
+        const shuffled = [...geoData].sort(() => 0.5 - Math.random());
+        const chosenFeatures = shuffled.slice(0, 4);
+
+        chosenFeatures.forEach(feat => {
+          const qList = getTriviaQuestionsForCountry(feat);
+          const chosenQ = qList[Math.floor(Math.random() * qList.length)];
+          triviaQuestionsForRound.push(chosenQ);
+        });
+
+        targetCountryFeature = triviaQuestionsForRound[0].feature;
+        targetMeta = extractCountryMeta(targetCountryFeature);
+      } else {
+        const randIdx = Math.floor(Math.random() * geoData.length);
+        targetCountryFeature = geoData[randIdx];
+        targetMeta = extractCountryMeta(targetCountryFeature);
+        currentRoundClues = generateRoundClues(targetMeta);
+      }
 
       const lockBox = document.getElementById('lock-container');
       const btnLock = document.getElementById('btn-lock-guess');
@@ -1653,6 +1849,8 @@
         renderGuesserSidebar();
       } else if (gameMode === 'hotcold') {
         renderHotColdSidebar();
+      } else if (gameMode === 'trivia') {
+        renderTriviaSidebar();
       } else {
         renderCitySidebar();
       }
@@ -1796,6 +1994,11 @@
             if (gameOver && cascadingRedSet.has(d)) return 'rgba(239, 68, 68, 0.9)';
             if (d === selectedFeature) return 'rgba(245, 158, 11, 0.95)';
 
+            if (gameMode === 'trivia') {
+              if (triviaWrongAttemptsThisQuestion.has(d)) return 'rgba(239, 68, 68, 0.85)';
+              return 'rgba(30, 41, 59, 0.85)';
+            }
+
             if (gameMode === 'city') {
               if (d === targetCountryFeature) return 'rgba(16, 185, 129, 0.35)';
               return 'rgba(30, 41, 59, 0.85)';
@@ -1908,6 +2111,96 @@
               }, 400);
             }
           };
+
+          if (gameMode === 'trivia') {
+            if (!selectedFeature) return;
+
+            const selName = getFeatureName(selectedFeature);
+            const targetName = getFeatureName(targetCountryFeature);
+            const isCorrect = (selectedFeature === targetCountryFeature) || 
+              (selName !== "Unknown Country" && targetName !== "Unknown Country" && selName.toLowerCase() === targetName.toLowerCase());
+
+            if (isCorrect) {
+              sounds.playWin();
+              triviaScore++;
+              showFeedbackToast(`🎉 Correct! ${targetName} is right! (+1 Pt)`, 'win');
+
+              triviaQuestionIndex++;
+              triviaAttemptsLeft = 2;
+              triviaWrongAttemptsThisQuestion.clear();
+              selectedFeature = null;
+
+              const lockBox = document.getElementById('lock-container');
+              if (lockBox) {
+                lockBox.style.display = 'none';
+                lockBox.classList.remove('scale-100', 'opacity-100');
+                lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+              }
+
+              if (triviaQuestionIndex >= 4) {
+                gameOver = true;
+                gameWon = triviaScore > 0;
+                
+                const winTextContainer = document.getElementById('win-text-container');
+                if (winTextContainer) {
+                  winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-purple-300 border border-purple-500/50 shadow-2xl flex items-center space-x-2";
+                  winTextContainer.innerHTML = `<span>🧠 <strong>Trivia Game Finished!</strong> Score: ${triviaScore} / 4 Correct!</span>`;
+                }
+
+                if (window.confetti && triviaScore >= 2) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                revealPlayAnother();
+              } else {
+                targetCountryFeature = triviaQuestionsForRound[triviaQuestionIndex].feature;
+                targetMeta = extractCountryMeta(targetCountryFeature);
+                renderTriviaSidebar();
+                worldGlobe.polygonsData(geoData);
+              }
+              return;
+            } else {
+              sounds.playWrong();
+              triviaWrongAttemptsThisQuestion.add(selectedFeature);
+              triviaAttemptsLeft--;
+              selectedFeature = null;
+
+              const lockBox = document.getElementById('lock-container');
+              if (lockBox) {
+                lockBox.style.display = 'none';
+                lockBox.classList.remove('scale-100', 'opacity-100');
+                lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+              }
+
+              if (triviaAttemptsLeft > 0) {
+                showFeedbackToast(`❌ Incorrect! ${selName} is wrong. 1 attempt remaining!`, 'wrong');
+                renderTriviaSidebar();
+                worldGlobe.polygonsData(geoData);
+              } else {
+                showFeedbackToast(`❌ Out of tries! The correct answer was <strong>${targetName}</strong>.`, 'wrong');
+                
+                triviaQuestionIndex++;
+                triviaAttemptsLeft = 2;
+                triviaWrongAttemptsThisQuestion.clear();
+
+                if (triviaQuestionIndex >= 4) {
+                  gameOver = true;
+                  gameWon = triviaScore > 0;
+
+                  const winTextContainer = document.getElementById('win-text-container');
+                  if (winTextContainer) {
+                    winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-purple-300 border border-purple-500/50 shadow-2xl flex items-center space-x-2";
+                    winTextContainer.innerHTML = `<span>🧠 <strong>Trivia Game Finished!</strong> Score: ${triviaScore} / 4 Correct!</span>`;
+                  }
+
+                  revealPlayAnother();
+                } else {
+                  targetCountryFeature = triviaQuestionsForRound[triviaQuestionIndex].feature;
+                  targetMeta = extractCountryMeta(targetCountryFeature);
+                  renderTriviaSidebar();
+                  worldGlobe.polygonsData(geoData);
+                }
+              }
+              return;
+            }
+          }
 
           if (gameMode === 'city') {
             if (cityStep === 'select_country') {
@@ -2146,6 +2439,7 @@
       const btnGuesser = document.getElementById('mode-guesser');
       const btnHotCold = document.getElementById('mode-hotcold');
       const btnCity = document.getElementById('mode-city');
+      const btnTrivia = document.getElementById('mode-trivia');
 
       if (modeBtn && modeMenu) {
         modeBtn.addEventListener('click', (e) => {
@@ -2159,7 +2453,7 @@
           }
         });
 
-        if (btnGuesser && btnHotCold && btnCity) {
+        if (btnGuesser && btnHotCold && btnCity && btnTrivia) {
           btnGuesser.addEventListener('click', () => {
             if (gameMode === 'guesser') { modeMenu.classList.add('hidden'); return; }
             gameMode = 'guesser';
@@ -2167,6 +2461,7 @@
             btnGuesser.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-amber-300 bg-slate-800/50";
             btnHotCold.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
             btnCity.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
+            btnTrivia.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
             modeMenu.classList.add('hidden');
             startNewRound();
           });
@@ -2178,6 +2473,7 @@
             btnHotCold.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-amber-300 bg-slate-800/50 mt-1";
             btnGuesser.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300";
             btnCity.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
+            btnTrivia.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
             modeMenu.classList.add('hidden');
             startNewRound();
           });
@@ -2189,6 +2485,19 @@
             btnCity.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-amber-300 bg-slate-800/50 mt-1";
             btnGuesser.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300";
             btnHotCold.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
+            btnTrivia.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
+            modeMenu.classList.add('hidden');
+            startNewRound();
+          });
+
+          btnTrivia.addEventListener('click', () => {
+            if (gameMode === 'trivia') { modeMenu.classList.add('hidden'); return; }
+            gameMode = 'trivia';
+            if (modeBadge) modeBadge.textContent = 'Trivia Guesser';
+            btnTrivia.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-purple-300 bg-purple-900/40 mt-1";
+            btnGuesser.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300";
+            btnHotCold.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
+            btnCity.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
             modeMenu.classList.add('hidden');
             startNewRound();
           });
