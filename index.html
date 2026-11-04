@@ -309,6 +309,7 @@
     let impactGuessLoc = null; // { lat, lng }
     let impactGuessRadius = 25; // km
     let isDraggingImpactRadius = false;
+    let isImpactHintRevealed = false;
 
     // Authentic Real World Impact Craters Database
     const METEORITES_DATABASE = [
@@ -630,6 +631,12 @@
     function setImpactRadius(val) {
       updateImpactRadius(val);
     }
+
+    function toggleImpactHint() {
+      isImpactHintRevealed = !isImpactHintRevealed;
+      renderImpactSidebar();
+    }
+    window.toggleImpactHint = toggleImpactHint;
 
     function getTriviaQuestionsForCountry(feature) {
       const meta = extractCountryMeta(feature);
@@ -1292,8 +1299,25 @@
                 <i class="fa-solid fa-meteor text-orange-400"></i>
                 <span>${targetMeteor.name}</span>
               </div>
-              <div class="text-[10px] text-slate-400 mt-1"><i class="fa-solid fa-earth-americas text-teal-400 mr-1"></i>Region: ${targetMeteor.location}</div>
             </div>
+
+            ${!isImpactHintRevealed ? `
+              <button onclick="toggleImpactHint()" class="w-full py-1.5 px-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold flex items-center justify-center space-x-1.5 transition cursor-pointer">
+                <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                <span>Reveal Region Hint</span>
+              </button>
+            ` : `
+              <div class="glass-card p-2 rounded-lg border border-amber-500/30 bg-slate-900/80 text-[10px] text-slate-300 space-y-1 animate-fade-in">
+                <div class="flex items-center justify-between text-amber-300 font-bold mb-1">
+                  <span><i class="fa-solid fa-lightbulb text-amber-400 mr-1"></i>Region Clue</span>
+                  <button onclick="toggleImpactHint()" class="text-slate-400 hover:text-white text-[9px] underline cursor-pointer">
+                    <i class="fa-solid fa-eye-slash mr-0.5"></i>Hide
+                  </button>
+                </div>
+                <div><i class="fa-solid fa-earth-americas text-teal-400 mr-1"></i>Location: <strong class="text-white">${targetMeteor.location}</strong></div>
+                <div><i class="fa-solid fa-clock text-amber-400 mr-1"></i>Approx. Age: <strong class="text-slate-200">${targetMeteor.age}</strong></div>
+              </div>
+            `}
 
             <div class="text-[11px] text-slate-300 space-y-2">
               <div class="flex items-start space-x-2">
@@ -1317,6 +1341,24 @@
               </div>
               <span class="text-[10px] text-amber-300 font-mono font-bold truncate max-w-[110px]">${targetMeteor.name}</span>
             </div>
+
+            ${!isImpactHintRevealed ? `
+              <button onclick="toggleImpactHint()" class="w-full py-1 px-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold flex items-center justify-center space-x-1.5 transition cursor-pointer">
+                <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                <span>Reveal Region Hint</span>
+              </button>
+            ` : `
+              <div class="glass-card p-2 rounded-lg border border-amber-500/30 bg-slate-900/80 text-[10px] text-slate-300 space-y-1 animate-fade-in">
+                <div class="flex items-center justify-between text-amber-300 font-bold mb-1">
+                  <span><i class="fa-solid fa-lightbulb text-amber-400 mr-1"></i>Region Clue</span>
+                  <button onclick="toggleImpactHint()" class="text-slate-400 hover:text-white text-[9px] underline cursor-pointer">
+                    <i class="fa-solid fa-eye-slash mr-0.5"></i>Hide
+                  </button>
+                </div>
+                <div><i class="fa-solid fa-earth-americas text-teal-400 mr-1"></i>Location: <strong class="text-white">${targetMeteor.location}</strong></div>
+                <div><i class="fa-solid fa-clock text-amber-400 mr-1"></i>Approx. Age: <strong class="text-slate-200">${targetMeteor.age}</strong></div>
+              </div>
+            `}
 
             <!-- Radius Controls Box -->
             <div class="glass-card p-2.5 rounded-lg border border-slate-700/80 bg-slate-900/80 space-y-2">
@@ -1554,6 +1596,7 @@
       impactGuessLoc = null;
       impactGuessRadius = 25;
       targetMeteor = null;
+      isImpactHintRevealed = false;
 
       if (worldGlobe) {
         worldGlobe.htmlElementsData([]);
@@ -1561,6 +1604,7 @@
       }
 
       if (gameMode === 'impact') {
+        targetCountryFeature = null;
         const randIdx = Math.floor(Math.random() * METEORITES_DATABASE.length);
         targetMeteor = METEORITES_DATABASE[randIdx];
       } else if (gameMode === 'trivia') {
@@ -1817,6 +1861,8 @@
             if (d.properties && d.properties.isGuessCircle) return 'rgba(156, 163, 175, 0.45)';
             if (d.properties && d.properties.isTargetCircle) return 'rgba(16, 185, 129, 0.55)';
 
+            if (gameMode === 'impact') return 'rgba(30, 41, 59, 0.85)';
+
             if (gameOver && d === targetCountryFeature) {
               return gameWon ? 'rgba(16, 185, 129, 0.95)' : 'rgba(59, 130, 246, 0.95)';
             }
@@ -1854,6 +1900,7 @@
           .polygonAltitude(d => {
             if (d.properties && d.properties.isGuessCircle) return 0.025;
             if (d.properties && d.properties.isTargetCircle) return 0.03;
+            if (gameMode === 'impact') return 0.008;
             if (gameMode === 'city') {
               if (d === targetCountryFeature) return 0.008;
               return 0.008;
