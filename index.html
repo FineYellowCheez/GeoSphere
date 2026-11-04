@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GeoSphere - 3D Globe Country Mystery</title>
+  <title>GeoSphere - 3D Globe World Mystery</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -72,7 +72,7 @@
       animation: fadeIn 0.3s ease-out forwards;
     }
 
-    /* Ensure Globe WebGL canvas receives pointer events while tooltips/markers pass through */
+    /* Globe canvas pointer handling */
     #globe-container {
       position: relative;
     }
@@ -148,12 +148,19 @@
                 <div class="text-[10px] font-normal text-slate-400">4 questions, 2 attempts each</div>
               </div>
             </button>
+            <button id="mode-impact" class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1">
+              <i class="fa-solid fa-meteor text-orange-400 text-sm"></i>
+              <div>
+                <div>Impact Mode</div>
+                <div class="text-[10px] font-normal text-slate-400">Pinpoint meteorites & crater radius</div>
+              </div>
+            </button>
           </div>
         </div>
 
         <div class="glass-card px-2.5 py-1 rounded-xl flex items-center space-x-2 text-[11px] text-slate-300 shadow-md pointer-events-auto hidden md:flex">
           <i class="fa-solid fa-hand-pointer text-amber-400 animate-bounce"></i>
-          <span>Drag globe &bull; Click country</span>
+          <span>Drag globe &bull; Click surface</span>
         </div>
 
         <!-- Interactive Search Bar -->
@@ -181,7 +188,7 @@
       </div>
 
       <!-- Dynamic Sidebar Container (Left Side) -->
-      <div id="sidebar-container" class="absolute top-14 left-3 bottom-16 z-10 pointer-events-none flex flex-col justify-center space-y-2 w-48 sm:w-52 max-w-[calc(45vw-1rem)] overflow-hidden">
+      <div id="sidebar-container" class="absolute top-14 left-3 bottom-16 z-10 pointer-events-none flex flex-col justify-center space-y-2 w-48 sm:w-56 max-w-[calc(50vw-1rem)] overflow-hidden">
       </div>
 
       <!-- Globe WebGL Canvas Mount Container -->
@@ -193,10 +200,10 @@
         </div>
       </div>
 
-      <!-- Floating Lock In Green Circle Button -->
+      <!-- Floating Lock In Green Button -->
       <div id="lock-container" style="display: none;" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 transform scale-75 opacity-0 pointer-events-none flex flex-col items-center space-y-2">
         <div id="selected-country-name" class="glass-panel px-4 py-1.5 rounded-full text-xs font-black text-amber-300 border border-amber-500/50 shadow-2xl max-w-xs truncate text-center tracking-wide pointer-events-none">
-          -- Country Selected --
+          -- Selection Made --
         </div>
         <button id="btn-lock-guess" title="Lock in Guess" class="w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-600 via-emerald-500 to-green-400 hover:from-emerald-500 hover:to-green-300 text-white shadow-[0_0_25px_rgba(16,185,129,0.7)] hover:shadow-[0_0_35px_rgba(16,185,129,0.9)] flex items-center justify-center transition-all transform hover:scale-110 active:scale-90 border-2 border-emerald-200 pointer-events-none cursor-pointer">
           <i class="fa-solid fa-check text-2xl drop-shadow-md pointer-events-none"></i>
@@ -206,7 +213,7 @@
       <!-- Floating Play Another Button -->
       <div id="play-another-container" style="display: none;" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 transition-all duration-300 transform scale-90 opacity-0 pointer-events-none flex flex-col items-center space-y-2">
         <div id="win-text-container" class="glass-panel px-4 py-1.5 rounded-full text-xs font-black text-emerald-400 border border-emerald-500/50 shadow-2xl flex items-center space-x-2 pointer-events-none">
-          <span>🎉 Correct! It's <span id="win-country-name" class="underline font-bold"></span>!</span>
+          <span><i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Round Complete!</span>
         </div>
         <button id="btn-play-another" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-extrabold shadow-[0_0_25px_rgba(16,185,129,0.7)] hover:shadow-[0_0_35px_rgba(16,185,129,0.9)] flex items-center space-x-2 transition-all transform hover:scale-105 active:scale-95 border border-emerald-200 pointer-events-none cursor-pointer">
           <i class="fa-solid fa-rotate-right pointer-events-none"></i>
@@ -285,24 +292,187 @@
     let redCascadeInterval = null;
     let gameOver = false;
     let gameWon = false;
-    let gameMode = 'guesser'; // 'guesser', 'hotcold', 'city', 'trivia'
+    let gameMode = 'guesser'; // 'guesser', 'hotcold', 'city', 'trivia', 'impact'
     let cityStep = 'select_country'; // 'select_country', 'pinpoint', 'result'
     let placedPin = null;
     let targetCity = null;
 
     // Trivia Guesser State Variables
-    let triviaQuestionIndex = 0; // 0 to 3 (4 questions per game)
-    let triviaScore = 0; // Out of 4
-    let triviaAttemptsLeft = 2; // 2 attempts per question
-    let triviaQuestionsForRound = []; // Holds 4 question objects for the game
-    let triviaWrongAttemptsThisQuestion = new Set(); // Wrong country guesses for current question
+    let triviaQuestionIndex = 0;
+    let triviaScore = 0;
+    let triviaAttemptsLeft = 2;
+    let triviaQuestionsForRound = [];
+    let triviaWrongAttemptsThisQuestion = new Set();
+
+    // Impact Mode State Variables
+    let targetMeteor = null;
+    let impactGuessLoc = null; // { lat, lng }
+    let impactGuessRadius = 25; // km
+    let isDraggingImpactRadius = false;
+
+    // Authentic Real World Impact Craters Database
+    const METEORITES_DATABASE = [
+      {
+        name: "Chicxulub Impact Crater",
+        lat: 21.4,
+        lng: -89.5,
+        radius: 75,
+        location: "Yucatan Peninsula, Mexico",
+        age: "66 Million Years Ago",
+        fact: "Triggered the Cretaceous-Paleogene extinction event, wiping out 75% of Earth's species including all non-avian dinosaurs."
+      },
+      {
+        name: "Barringer Meteor Crater",
+        lat: 35.027,
+        lng: -111.022,
+        radius: 0.6,
+        location: "Arizona, USA",
+        age: "50,000 Years Ago",
+        fact: "One of the best-preserved meteorite impact craters on Earth, formed by a 50-meter wide nickel-iron asteroid."
+      },
+      {
+        name: "Vredefort Dome",
+        lat: -27.0,
+        lng: 27.5,
+        radius: 90,
+        location: "Free State, South Africa",
+        age: "2.02 Billion Years Ago",
+        fact: "The largest verified impact structure on Earth, originally spanning over 250 km in diameter."
+      },
+      {
+        name: "Sudbury Basin",
+        lat: 46.6,
+        lng: -81.3,
+        radius: 65,
+        location: "Ontario, Canada",
+        age: "1.85 Billion Years Ago",
+        fact: "Created rich global nickel and copper ore reserves formed directly from the superheated impact melt pool."
+      },
+      {
+        name: "Tunguska Event Airburst",
+        lat: 60.917,
+        lng: 101.95,
+        radius: 15,
+        location: "Siberia, Russia",
+        age: "June 30, 1908",
+        fact: "A 12-megaton atmospheric explosion that flattened over 80 million trees across 2,150 square kilometers of taiga."
+      },
+      {
+        name: "Manicouagan Reservoir",
+        lat: 51.38,
+        lng: -68.7,
+        radius: 35,
+        location: "Quebec, Canada",
+        age: "214 Million Years Ago",
+        fact: "Known as the Eye of Quebec, this dramatic ring lake crater is clearly visible from space."
+      },
+      {
+        name: "Popigai Crater",
+        lat: 71.65,
+        lng: 111.18,
+        radius: 50,
+        location: "Siberia, Russia",
+        age: "35.7 Million Years Ago",
+        fact: "Contains trillion-carat deposits of industrial impact diamonds created instantly during shock compression."
+      },
+      {
+        name: "Wolfe Creek Crater",
+        lat: -19.172,
+        lng: 127.796,
+        radius: 0.44,
+        location: "Western Australia",
+        age: "120,000 Years Ago",
+        fact: "A remarkably intact bowl crater in the Great Sandy Desert, known to local Jaru people as Kandimalal."
+      },
+      {
+        name: "Pingualuit Lake Crater",
+        lat: 61.28,
+        lng: -73.67,
+        radius: 1.7,
+        location: "Nunavik, Quebec, Canada",
+        age: "1.4 Million Years Ago",
+        fact: "Holds an ultra-pure freshwater lake fed solely by rain and snow, with water transparency reaching 35 meters."
+      },
+      {
+        name: "Nordlinger Ries Crater",
+        lat: 48.85,
+        lng: 10.5,
+        radius: 12,
+        location: "Bavaria, Germany",
+        age: "14.8 Million Years Ago",
+        fact: "The medieval walled city of Nordlingen sits entirely inside this crater, built using diamond-bearing suevite stone."
+      },
+      {
+        name: "Chesapeake Bay Impact Crater",
+        lat: 37.28,
+        lng: -76.0,
+        radius: 20,
+        location: "Virginia, USA",
+        age: "35.5 Million Years Ago",
+        fact: "Buried beneath Chesapeake Bay, this marine bolide impact shaped regional coastline and aquifer salinity."
+      },
+      {
+        name: "Lonar Lake Crater",
+        lat: 19.976,
+        lng: 76.51,
+        radius: 0.9,
+        location: "Maharashtra, India",
+        age: "52,000 Years Ago",
+        fact: "One of Earth's rare hyper-velocity impact craters in basaltic rock, housing a unique alkaline-saline lake."
+      },
+      {
+        name: "Gosses Bluff (Tnorala)",
+        lat: -23.82,
+        lng: 132.31,
+        radius: 11,
+        location: "Northern Territory, Australia",
+        age: "142 Million Years Ago",
+        fact: "The eroded central ring structure stands dramatically 180 meters above the central Australian Outback plains."
+      },
+      {
+        name: "Morokweng Structure",
+        lat: -26.47,
+        lng: 23.53,
+        radius: 35,
+        location: "Kalahari Desert, South Africa",
+        age: "145 Million Years Ago",
+        fact: "Deep core drilling recovered a pristine 25-cm fragment of the original meteorite impactor buried 770 meters deep."
+      },
+      {
+        name: "Siljan Ring Structure",
+        lat: 61.03,
+        lng: 14.9,
+        radius: 26,
+        location: "Dalarna, Sweden",
+        age: "377 Million Years Ago",
+        fact: "The largest impact structure in Western Europe, featuring a ring array of picturesque lakes."
+      },
+      {
+        name: "Roter Kamm Crater",
+        lat: -27.77,
+        lng: 16.29,
+        radius: 1.25,
+        location: "Namib Desert, Namibia",
+        age: "3.7 Million Years Ago",
+        fact: "A striking circular crater rim rising above glowing red sand dunes in the Namib-Naukluft region."
+      },
+      {
+        name: "Mistastin Lake Crater",
+        lat: 55.88,
+        lng: -63.3,
+        radius: 14,
+        location: "Labrador, Canada",
+        age: "36.4 Million Years Ago",
+        fact: "Impact rocks here reached over 2,370 degrees Celsius—the hottest crustal surface temperatures ever recorded on Earth."
+      }
+    ];
 
     const LEFT_DRIVE_ISO = new Set([
       "GB", "UK", "AU", "JP", "IN", "ZA", "NZ", "IE", "TH", "MY", "ID", "PK", 
       "BD", "LK", "KE", "JM", "CY", "MT", "SG", "UG", "TZ", "ZM", "ZW", "BW", 
       "NA", "SZ", "LS", "MW", "MZ", "TT", "BB", "BS", "GD", "AG", "KN", "LC", "VC"
     ]);
-    // Curated Unique Trivia Statements for Nations
+
     const CURATED_TRIVIA_DATABASE = {
       "USA": [
         "Which country is home to the Grand Canyon, Yellowstone, and 50 federal states?",
@@ -348,7 +518,7 @@
       ],
       "BRA": [
         "Which nation is home to the vast Amazon Rainforest and the iconic Christ the Redeemer statue?",
-        "Which South American country's official capital city is Brasília?",
+        "Which South American country's official capital city is Brasilia?",
         "Which nation is famous for the Rio de Janeiro Carnival and winning 5 FIFA World Cups?",
         "Which country is the largest Portuguese-speaking nation in the world?"
       ],
@@ -378,28 +548,106 @@
       ]
     };
 
-    // Dynamic Generator to guarantee AT LEAST 4 distinct Trivia Questions for EVERY SINGLE Country
+    // Geodesic Mathematics for Surface Circle Polygons on Earth
+    function createGeodesicCircle(centerLat, centerLng, radiusKm, numPoints = 64) {
+      const points = [];
+      const R = 6371;
+      const radLat = centerLat * Math.PI / 180;
+      const radLng = centerLng * Math.PI / 180;
+      const d = radiusKm / R;
+
+      for (let i = 0; i <= numPoints; i++) {
+        const bearing = (i * 2 * Math.PI) / numPoints;
+        const ptLat = Math.asin(
+          Math.sin(radLat) * Math.cos(d) +
+          Math.cos(radLat) * Math.sin(d) * Math.cos(bearing)
+        );
+        const ptLng = radLng + Math.atan2(
+          Math.sin(bearing) * Math.sin(d) * Math.cos(radLat),
+          Math.cos(d) - Math.sin(radLat) * Math.sin(ptLat)
+        );
+
+        const degLat = ptLat * 180 / Math.PI;
+        let degLng = ptLng * 180 / Math.PI;
+        degLng = ((degLng + 540) % 360) - 180;
+
+        points.push([degLng, degLat]);
+      }
+
+      for (let i = 1; i < points.length; i++) {
+        let prevLng = points[i - 1][0];
+        let currLng = points[i][0];
+        if (currLng - prevLng > 180) points[i][0] -= 360;
+        else if (prevLng - currLng > 180) points[i][0] += 360;
+      }
+
+      return {
+        type: "Feature",
+        properties: { isCircle: true },
+        geometry: {
+          type: "Polygon",
+          coordinates: [points]
+        }
+      };
+    }
+
+    function getPolygonsWithImpactCircles() {
+      const list = [...geoData];
+      if (gameMode === 'impact') {
+        if (impactGuessLoc) {
+          const guessCircle = createGeodesicCircle(impactGuessLoc.lat, impactGuessLoc.lng, impactGuessRadius, 64);
+          guessCircle.properties.isGuessCircle = true;
+          list.push(guessCircle);
+        }
+        if (gameOver && targetMeteor) {
+          const targetCircle = createGeodesicCircle(targetMeteor.lat, targetMeteor.lng, targetMeteor.radius, 64);
+          targetCircle.properties.isTargetCircle = true;
+          list.push(targetCircle);
+        }
+      }
+      return list;
+    }
+
+    function updateImpactRadius(newRadius) {
+      impactGuessRadius = Math.max(0.1, Math.min(300, newRadius));
+      const textEl = document.getElementById('radius-display-text');
+      if (textEl) {
+        textEl.innerHTML = `${impactGuessRadius.toFixed(1)} km <span class="text-[10px] text-slate-400">(${(impactGuessRadius * 0.621371).toFixed(1)} mi)</span>`;
+      }
+      const sliderEl = document.getElementById('impact-radius-slider');
+      if (sliderEl) {
+        sliderEl.value = impactGuessRadius;
+      }
+      if (worldGlobe) {
+        worldGlobe.polygonsData(getPolygonsWithImpactCircles());
+      }
+    }
+
+    function adjustImpactRadius(delta) {
+      updateImpactRadius(impactGuessRadius + delta);
+    }
+
+    function setImpactRadius(val) {
+      updateImpactRadius(val);
+    }
+
     function getTriviaQuestionsForCountry(feature) {
       const meta = extractCountryMeta(feature);
-      const cName = meta.name;
       const iso3 = getCountryIso3(feature);
 
       let questions = [];
 
-      // Add curated questions if available
       if (CURATED_TRIVIA_DATABASE[iso3] && CURATED_TRIVIA_DATABASE[iso3].length >= 4) {
         questions = [...CURATED_TRIVIA_DATABASE[iso3]];
       }
 
-      // Guarantee at least 4 questions for EVERY country using structured metadata templates
       const fallbackQuestions = [
         `Which country's official capital city is ${meta.capital}?`,
         `Which nation located in ${meta.continent} (${meta.subregion}) uses the internet domain extension '${meta.tld}'?`,
         `Which country drives on the ${meta.drive} side of the road and is located in the ${meta.hemisphere} hemisphere?`,
-        `Which country features ${meta.mainColor} on its flag, is represented by ${meta.flag}, and has a name length of ${meta.nameLength} letters?`
+        `Which country features ${meta.mainColor} on its flag and has a name length of ${meta.nameLength} letters?`
       ];
 
-      // Fill in any remaining slots up to at least 4
       for (let fq of fallbackQuestions) {
         if (questions.length < 4 && !questions.includes(fq)) {
           questions.push(fq);
@@ -417,15 +665,6 @@
       if (!feature || !feature.properties) return "Unknown Country";
       const p = feature.properties;
       return p.NAME || p.name || p.ADMIN || p.SOVEREIGNT || p.NAME_LONG || "Unknown Country";
-    }
-
-    function getFlagEmoji(iso2) {
-      if (!iso2 || iso2.length !== 2) return "🌐";
-      const codePoints = iso2
-        .toUpperCase()
-        .split('')
-        .map(char => 127397 + char.charCodeAt(0));
-      return String.fromCodePoint(...codePoints);
     }
 
     function getPopTier(pop) {
@@ -534,8 +773,7 @@
       }
 
       if (worldGlobe) {
-        worldGlobe.polygonsData(geoData);
-        // Do not pan globe on selection unless explicitly forced (e.g. from search)
+        worldGlobe.polygonsData(getPolygonsWithImpactCircles());
         if (forceZoom) {
           const center = getFeatureCentroid(feature);
           const currentPov = worldGlobe.pointOfView();
@@ -546,7 +784,7 @@
     }
 
     const COUNTRY_METADATA_FALLBACK = {
-      "BRA": { capital: "Brasília", coast: "Atlantic Coastline", mainColor: "Green" },
+      "BRA": { capital: "Brasilia", coast: "Atlantic Coastline", mainColor: "Green" },
       "FRA": { capital: "Paris", coast: "Coastal & Maritime", mainColor: "Blue" },
       "JPN": { capital: "Tokyo", coast: "Island Archipelago", mainColor: "White" },
       "EGY": { capital: "Cairo", coast: "Dual Sea Coastline", mainColor: "Red" },
@@ -563,7 +801,6 @@
       "NOR": { capital: "Oslo", coast: "Fjord Coastline", mainColor: "Red" }
     };
 
-    // Helper: Resolve true 3-letter ISO code from GeoJSON feature properties
     function getCountryIso3(feature) {
       if (!feature || !feature.properties) return "UNK";
       const p = feature.properties;
@@ -576,7 +813,6 @@
       return "UNK";
     }
 
-    // Common Country Name Alias Mapping
     const COUNTRY_ISO_MAP = {
       "united states of america": "USA", "united states": "USA", "us": "USA",
       "france": "FRA", "united kingdom": "GBR", "germany": "DEU", "japan": "JPN",
@@ -595,19 +831,18 @@
       "singapore": "SGP", "iceland": "ISL", "norway": "NOR"
     };
 
-    // Authentic Real World Capitals Database for Global Nations
     const REAL_CAPITALS_DATABASE = {
       "AFG": "Kabul", "ALB": "Tirana", "DZA": "Algiers", "AND": "Andorra la Vella",
       "AGO": "Luanda", "ATG": "St. John's", "ARG": "Buenos Aires", "ARM": "Yerevan",
       "AUS": "Canberra", "AUT": "Vienna", "AZE": "Baku", "BHS": "Nassau",
       "BHR": "Manama", "BGD": "Dhaka", "BRB": "Bridgetown", "BLR": "Minsk",
       "BEL": "Brussels", "BLZ": "Belmopan", "BEN": "Porto-Novo", "BTN": "Thimphu",
-      "BOL": "La Paz", "BIH": "Sarajevo", "BWA": "Gaborone", "BRA": "Brasília",
+      "BOL": "La Paz", "BIH": "Sarajevo", "BWA": "Gaborone", "BRA": "Brasilia",
       "BRN": "Bandar Seri Begawan", "BGR": "Sofia", "BFA": "Ouagadougou", "BDI": "Gitega",
-      "KHM": "Phnom Penh", "CMR": "Yaoundé", "CAN": "Ottawa", "CPV": "Praia",
+      "KHM": "Phnom Penh", "CMR": "Yaounde", "CAN": "Ottawa", "CPV": "Praia",
       "CAF": "Bangui", "TCD": "N'Djamena", "CHL": "Santiago", "CHN": "Beijing",
-      "COL": "Bogotá", "COM": "Moroni", "COG": "Brazzaville", "COD": "Kinshasa",
-      "CRI": "San José", "HRV": "Zagreb", "CUB": "Havana", "CYP": "Nicosia",
+      "COL": "Bogota", "COM": "Moroni", "COG": "Brazzaville", "COD": "Kinshasa",
+      "CRI": "San Jose", "HRV": "Zagreb", "CUB": "Havana", "CYP": "Nicosia",
       "CZE": "Prague", "DNK": "Copenhagen", "DJI": "Djibouti", "DMA": "Roseau",
       "DOM": "Santo Domingo", "ECU": "Quito", "EGY": "Cairo", "SLV": "San Salvador",
       "GNQ": "Malabo", "ERI": "Asmara", "EST": "Tallinn", "SWZ": "Mbabane",
@@ -615,655 +850,51 @@
       "GAB": "Libreville", "GMB": "Banjul", "GEO": "Tbilisi", "DEU": "Berlin",
       "GHA": "Accra", "GRC": "Athens", "GRD": "St. George's", "GTM": "Guatemala City",
       "GIN": "Conakry", "GNB": "Bissau", "GUY": "Georgetown", "HTI": "Port-au-Prince",
-      "HND": "Tegucigalpa", "HUN": "Budapest", "ISL": "Reykjavík", "IND": "New Delhi",
+      "HND": "Tegucigalpa", "HUN": "Budapest", "ISL": "Reykjavik", "IND": "New Delhi",
       "IDN": "Jakarta", "IRN": "Tehran", "IRQ": "Baghdad", "IRL": "Dublin",
       "ISR": "Jerusalem", "ITA": "Rome", "JAM": "Kingston", "JPN": "Tokyo",
       "JOR": "Amman", "KAZ": "Astana", "KEN": "Nairobi", "KIR": "Tarawa",
       "KOR": "Seoul", "KWT": "Kuwait City", "KGZ": "Bishkek", "LAO": "Vientiane",
       "LVA": "Riga", "LBN": "Beirut", "LSO": "Maseru", "LBR": "Monrovia",
       "LBY": "Tripoli", "LIE": "Vaduz", "LTU": "Vilnius", "LUX": "Luxembourg",
-      "MDG": "Antananarivo", "MWI": "Lilongwe", "MYS": "Kuala Lumpur", "MDV": "Malé",
+      "MDG": "Antananarivo", "MWI": "Lilongwe", "MYS": "Kuala Lumpur", "MDV": "Male",
       "MLI": "Bamako", "MLT": "Valletta", "MRT": "Nouakchott", "MUS": "Port Louis",
-      "MEX": "Mexico City", "MDA": "Chișinău", "MCO": "Monaco", "MNG": "Ulaanbaatar",
+      "MEX": "Mexico City", "MDA": "Chisinau", "MCO": "Monaco", "MNG": "Ulaanbaatar",
       "MNE": "Podgorica", "MAR": "Rabat", "MOZ": "Maputo", "MMR": "Naypyidaw",
       "NAM": "Windhoek", "NPL": "Kathmandu", "NLD": "Amsterdam", "NZL": "Wellington",
       "NIC": "Managua", "NER": "Niamey", "NGA": "Abuja", "MKD": "Skopje",
       "NOR": "Oslo", "OMN": "Muscat", "PAK": "Islamabad", "PAN": "Panama City",
-      "PNG": "Port Moresby", "PRY": "Asunción", "PER": "Lima", "PHL": "Manila",
+      "PNG": "Port Moresby", "PRY": "Asuncion", "PER": "Lima", "PHL": "Manila",
       "POL": "Warsaw", "PRT": "Lisbon", "QAT": "Doha", "ROU": "Bucharest",
       "RUS": "Moscow", "RWA": "Kigali", "SAU": "Riyadh", "SEN": "Dakar",
       "SRB": "Belgrade", "SGP": "Singapore", "SVK": "Bratislava", "SVN": "Ljubljana",
       "SOM": "Mogadishu", "ZAF": "Pretoria", "ESP": "Madrid", "LKA": "Sri Jayawardenepura Kotte",
       "SDN": "Khartoum", "SWE": "Stockholm", "CHE": "Bern", "SYR": "Damascus",
       "TWN": "Taipei", "TJK": "Dushanbe", "TZA": "Dodoma", "THA": "Bangkok",
-      "TLS": "Dili", "TGO": "Lomé", "TTO": "Port of Spain", "TUN": "Tunis",
+      "TLS": "Dili", "TGO": "Lome", "TTO": "Port of Spain", "TUN": "Tunis",
       "TUR": "Ankara", "TKM": "Ashgabat", "UGA": "Kampala", "UKR": "Kyiv",
       "ARE": "Abu Dhabi", "GBR": "London", "USA": "Washington, D.C.", "URY": "Montevideo",
       "UZB": "Tashkent", "VEN": "Caracas", "VNM": "Hanoi", "YEM": "Sana'a",
       "ZMB": "Lusaka", "ZWE": "Harare"
     };
 
-    // City Guesser Dataset (Authentic World Cities Database)
     const CITIES_DATABASE = {
       "USA": [
         { name: "New York City", lat: 40.7128, lng: -74.0060 },
         { name: "Los Angeles", lat: 34.0522, lng: -118.2437 },
         { name: "Chicago", lat: 41.8781, lng: -87.6298 },
         { name: "Houston", lat: 29.7604, lng: -95.3698 },
-        { name: "Miami", lat: 25.7617, lng: -80.1918 },
-        { name: "Seattle", lat: 47.6062, lng: -122.3321 },
-        { name: "San Francisco", lat: 37.7749, lng: -122.4194 },
-        { name: "Las Vegas", lat: 36.1699, lng: -115.1398 },
-        { name: "Washington, D.C.", lat: 38.9072, lng: -77.0369 },
-        { name: "Denver", lat: 39.7392, lng: -104.9903 },
-        { name: "Boston", lat: 42.3601, lng: -71.0589 },
-        { name: "Dallas", lat: 32.7767, lng: -96.7970 },
-        { name: "Atlanta", lat: 33.7490, lng: -84.3880 },
-        { name: "Phoenix", lat: 33.4484, lng: -112.0740 },
-        { name: "Philadelphia", lat: 39.9526, lng: -75.1652 }
+        { name: "Miami", lat: 25.7617, lng: -80.1918 }
       ],
       "FRA": [
         { name: "Paris", lat: 48.8566, lng: 2.3522 },
         { name: "Marseille", lat: 43.2965, lng: 5.3698 },
-        { name: "Lyon", lat: 45.7640, lng: 4.8357 },
-        { name: "Toulouse", lat: 43.6047, lng: 1.4442 },
-        { name: "Nice", lat: 43.7102, lng: 7.2620 },
-        { name: "Bordeaux", lat: 44.8378, lng: -0.5792 },
-        { name: "Lille", lat: 50.6292, lng: 3.0573 },
-        { name: "Strasbourg", lat: 48.5734, lng: 7.7521 },
-        { name: "Nantes", lat: 47.2184, lng: -1.5536 },
-        { name: "Montpellier", lat: 43.6108, lng: 3.8767 }
+        { name: "Lyon", lat: 45.7640, lng: 4.8357 }
       ],
       "GBR": [
         { name: "London", lat: 51.5074, lng: -0.1278 },
-        { name: "Birmingham", lat: 52.4862, lng: -1.8904 },
         { name: "Manchester", lat: 53.4808, lng: -2.2426 },
-        { name: "Edinburgh", lat: 55.9533, lng: -3.1883 },
-        { name: "Glasgow", lat: 55.8642, lng: -4.2518 },
-        { name: "Liverpool", lat: 53.4084, lng: -2.9916 },
-        { name: "Bristol", lat: 51.4545, lng: -2.5879 },
-        { name: "Belfast", lat: 54.5973, lng: -5.9301 },
-        { name: "Leeds", lat: 53.8008, lng: -1.5491 },
-        { name: "Newcastle", lat: 54.9783, lng: -1.6178 }
-      ],
-      "DEU": [
-        { name: "Berlin", lat: 52.5200, lng: 13.4050 },
-        { name: "Munich", lat: 48.1351, lng: 11.5820 },
-        { name: "Frankfurt", lat: 50.1109, lng: 8.6821 },
-        { name: "Hamburg", lat: 53.5511, lng: 9.9937 },
-        { name: "Cologne", lat: 50.9375, lng: 6.9603 },
-        { name: "Stuttgart", lat: 48.7758, lng: 9.1829 },
-        { name: "Düsseldorf", lat: 51.2277, lng: 6.7735 },
-        { name: "Leipzig", lat: 51.3397, lng: 12.3731 },
-        { name: "Dresden", lat: 51.0504, lng: 13.7373 },
-        { name: "Nuremberg", lat: 49.4521, lng: 11.0767 }
-      ],
-      "JPN": [
-        { name: "Tokyo", lat: 35.6762, lng: 139.6503 },
-        { name: "Osaka", lat: 34.6937, lng: 135.5023 },
-        { name: "Kyoto", lat: 35.0116, lng: 135.7681 },
-        { name: "Sapporo", lat: 43.0618, lng: 141.3545 },
-        { name: "Hiroshima", lat: 34.3853, lng: 132.4553 },
-        { name: "Fukuoka", lat: 33.5904, lng: 130.4017 },
-        { name: "Nagoya", lat: 35.1815, lng: 136.9066 },
-        { name: "Yokohama", lat: 35.4437, lng: 139.6380 },
-        { name: "Kobe", lat: 34.6901, lng: 135.1955 },
-        { name: "Sendai", lat: 38.2682, lng: 140.8694 }
-      ],
-      "CHN": [
-        { name: "Beijing", lat: 39.9042, lng: 116.4074 },
-        { name: "Shanghai", lat: 31.2304, lng: 121.4737 },
-        { name: "Guangzhou", lat: 23.1291, lng: 113.2644 },
-        { name: "Shenzhen", lat: 22.5431, lng: 114.0579 },
-        { name: "Chengdu", lat: 30.5728, lng: 104.0668 },
-        { name: "Wuhan", lat: 30.5928, lng: 114.3055 },
-        { name: "Xi'an", lat: 34.3416, lng: 108.9398 },
-        { name: "Chongqing", lat: 29.5630, lng: 106.5516 },
-        { name: "Hangzhou", lat: 30.2741, lng: 120.1551 },
-        { name: "Nanjing", lat: 32.0603, lng: 118.7969 },
-        { name: "Tianjin", lat: 39.3434, lng: 117.3616 }
-      ],
-      "BRA": [
-        { name: "Rio de Janeiro", lat: -22.9068, lng: -43.1729 },
-        { name: "São Paulo", lat: -23.5505, lng: -46.6333 },
-        { name: "Brasília", lat: -15.7975, lng: -47.8919 },
-        { name: "Salvador", lat: -12.9777, lng: -38.5016 },
-        { name: "Manaus", lat: -3.1190, lng: -60.0217 },
-        { name: "Belo Horizonte", lat: -19.9167, lng: -43.9345 },
-        { name: "Curitiba", lat: -25.4284, lng: -49.2733 },
-        { name: "Recife", lat: -8.0476, lng: -34.8770 },
-        { name: "Fortaleza", lat: -3.7319, lng: -38.5267 },
-        { name: "Porto Alegre", lat: -30.0346, lng: -51.2177 }
-      ],
-      "IND": [
-        { name: "New Delhi", lat: 28.6139, lng: 77.2090 },
-        { name: "Mumbai", lat: 19.0760, lng: 72.8777 },
-        { name: "Bengaluru", lat: 12.9716, lng: 77.5946 },
-        { name: "Kolkata", lat: 22.5726, lng: 88.3639 },
-        { name: "Chennai", lat: 13.0827, lng: 80.2707 },
-        { name: "Hyderabad", lat: 17.3850, lng: 78.4867 },
-        { name: "Ahmedabad", lat: 23.0225, lng: 72.5714 },
-        { name: "Jaipur", lat: 26.9124, lng: 75.7873 },
-        { name: "Pune", lat: 18.5204, lng: 73.8567 },
-        { name: "Surat", lat: 21.1702, lng: 72.8311 }
-      ],
-      "AUS": [
-        { name: "Sydney", lat: -33.8688, lng: 151.2093 },
-        { name: "Melbourne", lat: -37.8136, lng: 144.9631 },
-        { name: "Brisbane", lat: -27.4705, lng: 153.0260 },
-        { name: "Perth", lat: -31.9505, lng: 115.8605 },
-        { name: "Canberra", lat: -35.2809, lng: 149.1300 },
-        { name: "Adelaide", lat: -34.9285, lng: 138.6007 },
-        { name: "Gold Coast", lat: -28.0167, lng: 153.4000 },
-        { name: "Hobart", lat: -42.8821, lng: 147.3272 },
-        { name: "Darwin", lat: -12.4634, lng: 130.8456 }
-      ],
-      "CAN": [
-        { name: "Toronto", lat: 43.6532, lng: -79.3832 },
-        { name: "Vancouver", lat: 49.2827, lng: -123.1207 },
-        { name: "Montreal", lat: 45.5017, lng: -73.5673 },
-        { name: "Calgary", lat: 51.0447, lng: -114.0719 },
-        { name: "Ottawa", lat: 45.4215, lng: -75.6972 },
-        { name: "Edmonton", lat: 53.5461, lng: -113.4938 },
-        { name: "Quebec City", lat: 46.8139, lng: -71.2080 },
-        { name: "Winnipeg", lat: 49.8951, lng: -97.1384 },
-        { name: "Halifax", lat: 44.6488, lng: -63.5752 }
-      ],
-      "ITA": [
-        { name: "Rome", lat: 41.9028, lng: 12.4964 },
-        { name: "Milan", lat: 45.4642, lng: 9.1900 },
-        { name: "Venice", lat: 45.4408, lng: 12.3155 },
-        { name: "Florence", lat: 43.7696, lng: 11.2558 },
-        { name: "Naples", lat: 40.8518, lng: 14.2681 },
-        { name: "Turin", lat: 45.0703, lng: 7.6869 },
-        { name: "Bologna", lat: 44.4949, lng: 11.3426 },
-        { name: "Palermo", lat: 38.1157, lng: 13.3615 },
-        { name: "Genoa", lat: 44.4056, lng: 8.9463 },
-        { name: "Verona", lat: 45.4384, lng: 10.9916 }
-      ],
-      "ESP": [
-        { name: "Madrid", lat: 40.4168, lng: -3.7038 },
-        { name: "Barcelona", lat: 41.3851, lng: 2.1734 },
-        { name: "Seville", lat: 37.3891, lng: -5.9845 },
-        { name: "Valencia", lat: 39.4699, lng: -0.3763 },
-        { name: "Bilbao", lat: 43.2630, lng: -2.9350 },
-        { name: "Málaga", lat: 36.7213, lng: -4.4214 },
-        { name: "Zaragoza", lat: 41.6488, lng: -0.8891 },
-        { name: "Palma de Mallorca", lat: 39.5696, lng: 2.6502 },
-        { name: "Alicante", lat: 38.3452, lng: -0.4810 }
-      ],
-      "MEX": [
-        { name: "Mexico City", lat: 19.4326, lng: -99.1332 },
-        { name: "Guadalajara", lat: 20.6597, lng: -103.3496 },
-        { name: "Monterrey", lat: 25.6866, lng: -100.3161 },
-        { name: "Cancún", lat: 21.1619, lng: -86.8515 },
-        { name: "Tijuana", lat: 32.5149, lng: -117.0382 },
-        { name: "Puebla", lat: 19.0414, lng: -98.2063 },
-        { name: "Mérida", lat: 20.9674, lng: -89.5926 },
-        { name: "Querétaro", lat: 20.5888, lng: -100.3899 },
-        { name: "León", lat: 21.1236, lng: -101.6803 }
-      ],
-      "RUS": [
-        { name: "Moscow", lat: 55.7558, lng: 37.6173 },
-        { name: "Saint Petersburg", lat: 59.9343, lng: 30.3351 },
-        { name: "Novosibirsk", lat: 55.0084, lng: 82.9357 },
-        { name: "Yekaterinburg", lat: 56.8389, lng: 60.6057 },
-        { name: "Kazan", lat: 55.8304, lng: 49.0661 },
-        { name: "Vladivostok", lat: 43.1155, lng: 131.8855 },
-        { name: "Sochi", lat: 43.6028, lng: 39.7342 },
-        { name: "Nizhny Novgorod", lat: 56.3269, lng: 44.0059 },
-        { name: "Samara", lat: 53.1959, lng: 50.1002 }
-      ],
-      "ARG": [
-        { name: "Buenos Aires", lat: -34.6037, lng: -58.3816 },
-        { name: "Córdoba", lat: -31.4201, lng: -64.1888 },
-        { name: "Rosario", lat: -32.9468, lng: -60.6393 },
-        { name: "Mendoza", lat: -32.8895, lng: -68.8458 },
-        { name: "Bariloche", lat: -41.1335, lng: -71.3103 },
-        { name: "Salta", lat: -24.7821, lng: -65.4232 },
-        { name: "La Plata", lat: -34.9215, lng: -57.9545 },
-        { name: "Mar del Plata", lat: -38.0055, lng: -57.5426 }
-      ],
-      "EGY": [
-        { name: "Cairo", lat: 30.0444, lng: 31.2357 },
-        { name: "Alexandria", lat: 31.2001, lng: 29.9187 },
-        { name: "Luxor", lat: 25.6872, lng: 32.6396 },
-        { name: "Aswan", lat: 24.0889, lng: 32.8998 },
-        { name: "Giza", lat: 30.0131, lng: 31.2089 },
-        { name: "Sharm El Sheikh", lat: 27.9158, lng: 34.3299 },
-        { name: "Hurghada", lat: 27.2579, lng: 33.8116 }
-      ],
-      "ZAF": [
-        { name: "Pretoria", lat: -25.7479, lng: 28.2293 },
-        { name: "Cape Town", lat: -33.9249, lng: 18.4241 },
-        { name: "Johannesburg", lat: -26.2041, lng: 28.0473 },
-        { name: "Durban", lat: -29.8587, lng: 31.0218 },
-        { name: "Gqeberha (Port Elizabeth)", lat: -33.9608, lng: 25.6022 },
-        { name: "Bloemfontein", lat: -29.0852, lng: 26.1596 }
-      ],
-      "AUT": [
-        { name: "Vienna", lat: 48.2082, lng: 16.3738 },
-        { name: "Salzburg", lat: 47.8095, lng: 13.0550 },
-        { name: "Innsbruck", lat: 47.2692, lng: 11.4041 },
-        { name: "Graz", lat: 47.0707, lng: 15.4395 },
-        { name: "Linz", lat: 48.3069, lng: 14.2858 }
-      ],
-      "CHE": [
-        { name: "Zurich", lat: 47.3769, lng: 8.5417 },
-        { name: "Geneva", lat: 46.2044, lng: 6.1432 },
-        { name: "Bern", lat: 46.9480, lng: 7.4474 },
-        { name: "Basel", lat: 47.5596, lng: 7.5886 },
-        { name: "Lucerne", lat: 47.0502, lng: 8.3093 },
-        { name: "Lausanne", lat: 46.5197, lng: 6.6323 }
-      ],
-      "IRL": [
-        { name: "Dublin", lat: 53.3498, lng: -6.2603 },
-        { name: "Cork", lat: 51.8985, lng: -8.4756 },
-        { name: "Galway", lat: 53.2707, lng: -9.0568 },
-        { name: "Limerick", lat: 52.6638, lng: -8.6267 },
-        { name: "Kilkenny", lat: 52.6541, lng: -7.2448 }
-      ],
-      "UKR": [
-        { name: "Kyiv", lat: 50.4501, lng: 30.5234 },
-        { name: "Lviv", lat: 49.8397, lng: 24.0297 },
-        { name: "Odesa", lat: 46.4825, lng: 30.7233 },
-        { name: "Kharkiv", lat: 49.9935, lng: 36.2304 },
-        { name: "Dnipro", lat: 48.4647, lng: 35.0462 }
-      ],
-      "VNM": [
-        { name: "Hanoi", lat: 21.0285, lng: 105.8542 },
-        { name: "Ho Chi Minh City", lat: 10.8231, lng: 106.6297 },
-        { name: "Da Nang", lat: 16.0544, lng: 108.2022 },
-        { name: "Haiphong", lat: 20.8449, lng: 106.6881 },
-        { name: "Nha Trang", lat: 12.2388, lng: 109.1967 }
-      ],
-      "PHL": [
-        { name: "Manila", lat: 14.5995, lng: 120.9842 },
-        { name: "Cebu City", lat: 10.3157, lng: 123.8854 },
-        { name: "Davao City", lat: 7.1907, lng: 125.4553 },
-        { name: "Quezon City", lat: 14.6760, lng: 121.0437 },
-        { name: "Baguio", lat: 16.4023, lng: 120.5960 }
-      ],
-      "BEL": [
-        { name: "Brussels", lat: 50.8503, lng: 4.3517 },
-        { name: "Antwerp", lat: 51.2194, lng: 4.4025 },
-        { name: "Ghent", lat: 51.0543, lng: 3.7174 },
-        { name: "Bruges", lat: 51.2093, lng: 3.2247 },
-        { name: "Liège", lat: 50.6326, lng: 5.5797 }
-      ],
-      "NLD": [
-        { name: "Amsterdam", lat: 52.3676, lng: 4.9041 },
-        { name: "Rotterdam", lat: 51.9244, lng: 4.4777 },
-        { name: "The Hague", lat: 52.0705, lng: 4.3007 },
-        { name: "Utrecht", lat: 52.0907, lng: 5.1214 },
-        { name: "Eindhoven", lat: 51.4416, lng: 5.4697 },
-        { name: "Groningen", lat: 53.2194, lng: 6.5665 }
-      ],
-      "PRT": [
-        { name: "Lisbon", lat: 38.7223, lng: -9.1393 },
-        { name: "Porto", lat: 41.1579, lng: -8.6291 },
-        { name: "Faro", lat: 37.0194, lng: -7.9322 },
-        { name: "Coimbra", lat: 40.2033, lng: -8.4103 },
-        { name: "Braga", lat: 41.5454, lng: -8.4265 }
-      ],
-      "GRC": [
-        { name: "Athens", lat: 37.9838, lng: 23.7275 },
-        { name: "Thessaloniki", lat: 40.6401, lng: 22.9444 },
-        { name: "Heraklion", lat: 35.3387, lng: 25.1442 },
-        { name: "Patras", lat: 38.2466, lng: 21.7345 },
-        { name: "Rhodes", lat: 36.4349, lng: 28.2176 }
-      ],
-      "TUR": [
-        { name: "Ankara", lat: 39.9334, lng: 32.8597 },
-        { name: "Istanbul", lat: 41.0082, lng: 28.9784 },
-        { name: "Izmir", lat: 38.4237, lng: 27.1428 },
-        { name: "Antalya", lat: 36.8969, lng: 30.7133 },
-        { name: "Bursa", lat: 40.1885, lng: 29.0610 },
-        { name: "Adana", lat: 37.0000, lng: 35.3213 }
-      ],
-      "SWE": [
-        { name: "Stockholm", lat: 59.3293, lng: 18.0686 },
-        { name: "Gothenburg", lat: 57.7088, lng: 11.9745 },
-        { name: "Malmö", lat: 55.6050, lng: 13.0038 },
-        { name: "Uppsala", lat: 59.8586, lng: 17.6389 }
-      ],
-      "FIN": [
-        { name: "Helsinki", lat: 60.1699, lng: 24.9384 },
-        { name: "Tampere", lat: 61.4978, lng: 23.7610 },
-        { name: "Turku", lat: 60.4518, lng: 22.2666 },
-        { name: "Oulu", lat: 65.0121, lng: 25.4651 },
-        { name: "Rovaniemi", lat: 66.5039, lng: 25.7294 }
-      ],
-      "DNK": [
-        { name: "Copenhagen", lat: 55.6761, lng: 12.5683 },
-        { name: "Aarhus", lat: 56.1629, lng: 10.2039 },
-        { name: "Odense", lat: 55.4038, lng: 10.4024 },
-        { name: "Aalborg", lat: 57.0488, lng: 9.9217 }
-      ],
-      "POL": [
-        { name: "Warsaw", lat: 52.2297, lng: 21.0122 },
-        { name: "Kraków", lat: 50.0647, lng: 19.9450 },
-        { name: "Gdańsk", lat: 54.3520, lng: 18.6466 },
-        { name: "Wrocław", lat: 51.1100, lng: 17.0333 },
-        { name: "Poznań", lat: 52.4064, lng: 16.9252 },
-        { name: "Łódź", lat: 51.7592, lng: 19.4560 }
-      ],
-      "CZE": [
-        { name: "Prague", lat: 50.0755, lng: 14.4378 },
-        { name: "Brno", lat: 49.1951, lng: 16.6068 },
-        { name: "Ostrava", lat: 49.8209, lng: 18.2625 },
-        { name: "Pilsen", lat: 49.7384, lng: 13.3736 }
-      ],
-      "HUN": [
-        { name: "Budapest", lat: 47.4979, lng: 19.0402 },
-        { name: "Debrecen", lat: 47.5316, lng: 21.6273 },
-        { name: "Szeged", lat: 46.2530, lng: 20.1414 },
-        { name: "Miskolc", lat: 48.1035, lng: 20.7784 }
-      ],
-      "ROU": [
-        { name: "Bucharest", lat: 44.4323, lng: 26.1063 },
-        { name: "Cluj-Napoca", lat: 46.7712, lng: 23.6236 },
-        { name: "Timișoara", lat: 45.7489, lng: 21.2087 },
-        { name: "Iași", lat: 47.1585, lng: 27.6014 },
-        { name: "Constanța", lat: 44.1792, lng: 28.6498 }
-      ],
-      "NZL": [
-        { name: "Auckland", lat: -36.8485, lng: 174.7633 },
-        { name: "Wellington", lat: -41.2865, lng: 174.7762 },
-        { name: "Christchurch", lat: -43.5321, lng: 172.6362 },
-        { name: "Queenstown", lat: -45.0312, lng: 168.6626 },
-        { name: "Dunedin", lat: -45.8788, lng: 170.5028 }
-      ],
-      "MAR": [
-        { name: "Casablanca", lat: 33.5731, lng: -7.5898 },
-        { name: "Marrakech", lat: 31.6295, lng: -7.9811 },
-        { name: "Rabat", lat: 33.9716, lng: -6.8498 },
-        { name: "Tangier", lat: 35.7595, lng: -5.8340 },
-        { name: "Fes", lat: 34.0331, lng: -5.0003 },
-        { name: "Agadir", lat: 30.4278, lng: -9.5981 }
-      ],
-      "THA": [
-        { name: "Bangkok", lat: 13.7563, lng: 100.5018 },
-        { name: "Chiang Mai", lat: 18.7883, lng: 98.9853 },
-        { name: "Phuket", lat: 7.8804, lng: 98.3923 },
-        { name: "Pattaya", lat: 12.9236, lng: 100.8825 },
-        { name: "Hat Yai", lat: 7.0087, lng: 100.4747 }
-      ],
-      "MYS": [
-        { name: "Kuala Lumpur", lat: 3.1390, lng: 101.6869 },
-        { name: "George Town (Penang)", lat: 5.4141, lng: 100.3288 },
-        { name: "Johor Bahru", lat: 1.4927, lng: 103.7414 },
-        { name: "Kota Kinabalu", lat: 5.9804, lng: 116.0735 },
-        { name: "Ipoh", lat: 4.5975, lng: 101.0901 }
-      ],
-      "IDN": [
-        { name: "Jakarta", lat: -6.2088, lng: 106.8456 },
-        { name: "Surabaya", lat: -7.2575, lng: 112.7521 },
-        { name: "Denpasar (Bali)", lat: -8.6705, lng: 115.2126 },
-        { name: "Bandung", lat: -6.9175, lng: 107.6191 },
-        { name: "Yogyakarta", lat: -7.7956, lng: 110.3695 },
-        { name: "Medan", lat: 3.5952, lng: 98.6722 },
-        { name: "Makassar", lat: -5.1477, lng: 119.4327 }
-      ],
-      "PAK": [
-        { name: "Karachi", lat: 24.8607, lng: 67.0011 },
-        { name: "Lahore", lat: 31.5204, lng: 74.3587 },
-        { name: "Islamabad", lat: 33.6844, lng: 73.0479 },
-        { name: "Rawalpindi", lat: 33.5651, lng: 73.0169 },
-        { name: "Peshawar", lat: 34.0151, lng: 71.5249 }
-      ],
-      "COL": [
-        { name: "Bogotá", lat: 4.7110, lng: -74.0721 },
-        { name: "Medellín", lat: 6.2442, lng: -75.5812 },
-        { name: "Cali", lat: 3.4516, lng: -76.5320 },
-        { name: "Cartagena", lat: 10.3910, lng: -75.4794 },
-        { name: "Barranquilla", lat: 10.9685, lng: -74.7813 }
-      ],
-      "PER": [
-        { name: "Lima", lat: -12.0464, lng: -77.0428 },
-        { name: "Cusco", lat: -13.5319, lng: -71.9675 },
-        { name: "Arequipa", lat: -16.4090, lng: -71.5375 },
-        { name: "Trujillo", lat: -8.1116, lng: -79.0286 },
-        { name: "Iquitos", lat: -3.7437, lng: -73.2516 }
-      ],
-      "CHL": [
-        { name: "Santiago", lat: -33.4489, lng: -70.6693 },
-        { name: "Valparaíso", lat: -33.0472, lng: -71.6127 },
-        { name: "Concepción", lat: -36.8201, lng: -73.0444 },
-        { name: "Antofagasta", lat: -23.6509, lng: -70.3975 },
-        { name: "Puerto Montt", lat: -41.4693, lng: -72.9424 }
-      ],
-      "SAU": [
-        { name: "Riyadh", lat: 24.7136, lng: 46.6753 },
-        { name: "Jeddah", lat: 21.4858, lng: 39.1925 },
-        { name: "Mecca", lat: 21.3891, lng: 39.8579 },
-        { name: "Medina", lat: 24.5247, lng: 39.5692 },
-        { name: "Dammam", lat: 26.4207, lng: 50.0888 }
-      ],
-      "ARE": [
-        { name: "Abu Dhabi", lat: 24.4539, lng: 54.3773 },
-        { name: "Dubai", lat: 25.2048, lng: 55.2708 },
-        { name: "Sharjah", lat: 25.3463, lng: 55.4209 },
-        { name: "Al Ain", lat: 24.2075, lng: 55.7447 },
-        { name: "Ras Al Khaimah", lat: 25.7895, lng: 55.9432 }
-      ],
-      "KEN": [
-        { name: "Nairobi", lat: -1.2921, lng: 36.8219 },
-        { name: "Mombasa", lat: -4.0435, lng: 39.6682 },
-        { name: "Kisumu", lat: -0.0917, lng: 34.7680 },
-        { name: "Nakuru", lat: -0.3031, lng: 36.0800 }
-      ],
-      "NGA": [
-        { name: "Lagos", lat: 6.5244, lng: 3.3792 },
-        { name: "Abuja", lat: 9.0765, lng: 7.3986 },
-        { name: "Kano", lat: 12.0022, lng: 8.5920 },
-        { name: "Ibadan", lat: 7.3775, lng: 3.9470 },
-        { name: "Port Harcourt", lat: 4.8156, lng: 7.0498 }
-      ],
-      "KOR": [
-        { name: "Seoul", lat: 37.5665, lng: 126.9780 },
-        { name: "Busan", lat: 35.1796, lng: 129.0756 },
-        { name: "Incheon", lat: 37.4563, lng: 126.7052 },
-        { name: "Daegu", lat: 35.8714, lng: 128.6014 },
-        { name: "Jeju City", lat: 33.4996, lng: 126.5312 }
-      ],
-      "ISR": [
-        { name: "Jerusalem", lat: 31.7683, lng: 35.2137 },
-        { name: "Tel Aviv", lat: 32.0853, lng: 34.7818 },
-        { name: "Haifa", lat: 32.7940, lng: 34.9896 },
-        { name: "Eilat", lat: 29.5581, lng: 34.9482 }
-      ],
-      "SGP": [
-        { name: "Singapore", lat: 1.3521, lng: 103.8198 },
-        { name: "Sentosa", lat: 1.2494, lng: 103.8303 },
-        { name: "Jurong East", lat: 1.3329, lng: 103.7436 }
-      ],
-      "ISL": [
-        { name: "Reykjavík", lat: 64.1466, lng: -21.9426 },
-        { name: "Akureyri", lat: 65.6835, lng: -18.0878 },
-        { name: "Keflavík", lat: 64.0007, lng: -22.5624 }
-      ],
-      "NOR": [
-        { name: "Oslo", lat: 59.9139, lng: 10.7522 },
-        { name: "Bergen", lat: 60.3913, lng: 5.3221 },
-        { name: "Trondheim", lat: 63.4305, lng: 10.3951 },
-        { name: "Tromsø", lat: 69.6492, lng: 18.9553 },
-        { name: "Stavanger", lat: 58.9699, lng: 5.7331 }
-      ],
-      "GTM": [
-        { name: "Guatemala City", lat: 14.6349, lng: -90.5069 },
-        { name: "Quetzaltenango", lat: 14.8347, lng: -91.5181 },
-        { name: "Antigua Guatemala", lat: 14.5586, lng: -90.7295 }
-      ],
-      "HND": [
-        { name: "Tegucigalpa", lat: 14.0723, lng: -87.1921 },
-        { name: "San Pedro Sula", lat: 15.5042, lng: -88.0250 },
-        { name: "La Ceiba", lat: 15.7833, lng: -86.7833 }
-      ],
-      "CRI": [
-        { name: "San José", lat: 9.9281, lng: -84.0907 },
-        { name: "Alajuela", lat: 10.0163, lng: -84.2142 },
-        { name: "Puntarenas", lat: 9.9763, lng: -84.8384 }
-      ],
-      "PAN": [
-        { name: "Panama City", lat: 8.9824, lng: -79.5199 },
-        { name: "Colón", lat: 9.3598, lng: -79.9014 },
-        { name: "David", lat: 8.4273, lng: -82.4309 }
-      ],
-      "CUB": [
-        { name: "Havana", lat: 23.1136, lng: -82.3666 },
-        { name: "Santiago de Cuba", lat: 20.0208, lng: -75.8267 },
-        { name: "Camagüey", lat: 21.3808, lng: -77.9169 }
-      ],
-      "DOM": [
-        { name: "Santo Domingo", lat: 18.4861, lng: -69.9312 },
-        { name: "Santiago de los Caballeros", lat: 19.4517, lng: -70.6970 },
-        { name: "Punta Cana", lat: 18.5601, lng: -68.3725 }
-      ],
-      "ECU": [
-        { name: "Quito", lat: -0.1807, lng: -78.4678 },
-        { name: "Guayaquil", lat: -2.1894, lng: -79.8891 },
-        { name: "Cuenca", lat: -2.9001, lng: -79.0059 }
-      ],
-      "BOL": [
-        { name: "La Paz", lat: -16.4897, lng: -68.1193 },
-        { name: "Santa Cruz de la Sierra", lat: -17.8146, lng: -63.1561 },
-        { name: "Cochabamba", lat: -17.3895, lng: -66.1568 },
-        { name: "Sucre", lat: -19.0196, lng: -65.2619 }
-      ],
-      "PRY": [
-        { name: "Asunción", lat: -25.2637, lng: -57.5759 },
-        { name: "Ciudad del Este", lat: -25.5097, lng: -54.6111 }
-      ],
-      "URY": [
-        { name: "Montevideo", lat: -34.9011, lng: -56.1645 },
-        { name: "Salto", lat: -31.3833, lng: -57.9667 },
-        { name: "Punta del Este", lat: -34.9625, lng: -54.9428 }
-      ],
-      "VEN": [
-        { name: "Caracas", lat: 10.4806, lng: -66.9036 },
-        { name: "Maracaibo", lat: 10.6427, lng: -71.6125 },
-        { name: "Valencia", lat: 10.1620, lng: -68.0077 },
-        { name: "Barquisimeto", lat: 10.0678, lng: -69.3470 }
-      ],
-      "DZA": [
-        { name: "Algiers", lat: 36.7538, lng: 3.0588 },
-        { name: "Oran", lat: 35.6971, lng: -0.6308 },
-        { name: "Constantine", lat: 36.3650, lng: 6.6147 }
-      ],
-      "TUN": [
-        { name: "Tunis", lat: 36.8065, lng: 10.1815 },
-        { name: "Sfax", lat: 34.7406, lng: 10.7603 },
-        { name: "Sousse", lat: 35.8256, lng: 10.6369 }
-      ],
-      "ETH": [
-        { name: "Addis Ababa", lat: 9.0300, lng: 38.7400 },
-        { name: "Dire Dawa", lat: 9.5931, lng: 41.8661 },
-        { name: "Mekelle", lat: 13.4967, lng: 39.4753 },
-        { name: "Gondar", lat: 12.6000, lng: 37.4667 }
-      ],
-      "GHA": [
-        { name: "Accra", lat: 5.6037, lng: -0.1870 },
-        { name: "Kumasi", lat: 6.6885, lng: -1.6244 },
-        { name: "Tamale", lat: 9.4008, lng: -0.8393 }
-      ],
-      "CIV": [
-        { name: "Abidjan", lat: 5.3600, lng: -4.0083 },
-        { name: "Yamoussoukro", lat: 6.8276, lng: -5.2893 },
-        { name: "Bouaké", lat: 7.6939, lng: -5.0303 }
-      ],
-      "CMR": [
-        { name: "Yaoundé", lat: 3.8480, lng: 11.5021 },
-        { name: "Douala", lat: 4.0511, lng: 9.7679 },
-        { name: "Garoua", lat: 9.3000, lng: 13.4000 }
-      ],
-      "AGO": [
-        { name: "Luanda", lat: -8.8390, lng: 13.2894 },
-        { name: "Huambo", lat: -12.7761, lng: 15.7392 },
-        { name: "Benguela", lat: -12.5763, lng: 13.4055 }
-      ],
-      "TZA": [
-        { name: "Dodoma", lat: -6.1630, lng: 35.7516 },
-        { name: "Dar es Salaam", lat: -6.7924, lng: 39.2083 },
-        { name: "Mwanza", lat: -2.5167, lng: 32.9000 },
-        { name: "Arusha", lat: -3.3869, lng: 36.6830 }
-      ],
-      "UGA": [
-        { name: "Kampala", lat: 0.3476, lng: 32.5825 },
-        { name: "Entebbe", lat: 0.0512, lng: 32.4637 },
-        { name: "Jinja", lat: 0.4244, lng: 33.2042 }
-      ],
-      "ZMB": [
-        { name: "Lusaka", lat: -15.3875, lng: 28.3228 },
-        { name: "Ndola", lat: -12.9583, lng: 28.6361 },
-        { name: "Livingstone", lat: -17.8419, lng: 25.8544 }
-      ],
-      "ZWE": [
-        { name: "Harare", lat: -17.8252, lng: 31.0335 },
-        { name: "Bulawayo", lat: -20.1500, lng: 28.5833 },
-        { name: "Victoria Falls", lat: -17.9244, lng: 25.8364 }
-      ],
-      "AFG": [
-        { name: "Kabul", lat: 34.5553, lng: 69.2075 },
-        { name: "Kandahar", lat: 31.6289, lng: 65.7372 },
-        { name: "Herat", lat: 34.3529, lng: 62.2040 }
-      ],
-      "KAZ": [
-        { name: "Astana", lat: 51.1694, lng: 71.4491 },
-        { name: "Almaty", lat: 43.2220, lng: 76.8512 },
-        { name: "Shymkent", lat: 42.3155, lng: 69.5869 }
-      ],
-      "UZB": [
-        { name: "Tashkent", lat: 41.2995, lng: 69.2401 },
-        { name: "Samarkand", lat: 39.6542, lng: 66.9597 },
-        { name: "Bukhara", lat: 39.7747, lng: 64.4286 }
-      ],
-      "KHM": [
-        { name: "Phnom Penh", lat: 11.5564, lng: 104.9282 },
-        { name: "Siem Reap", lat: 13.3671, lng: 103.8448 },
-        { name: "Sihanoukville", lat: 10.6093, lng: 103.5296 }
-      ],
-      "NPL": [
-        { name: "Kathmandu", lat: 27.7172, lng: 85.3240 },
-        { name: "Pokhara", lat: 28.2096, lng: 83.9856 },
-        { name: "Lalitpur", lat: 27.6667, lng: 85.3167 }
-      ],
-      "LKA": [
-        { name: "Sri Jayawardenepura Kotte", lat: 6.8867, lng: 79.9186 },
-        { name: "Colombo", lat: 6.9271, lng: 79.8612 },
-        { name: "Kandy", lat: 7.2906, lng: 80.6337 },
-        { name: "Galle", lat: 6.0535, lng: 80.2210 }
-      ],
-      "BGD": [
-        { name: "Dhaka", lat: 23.8103, lng: 90.4125 },
-        { name: "Chittagong", lat: 22.3569, lng: 91.7832 },
-        { name: "Sylhet", lat: 24.8949, lng: 91.8687 }
-      ],
-      "JOR": [
-        { name: "Amman", lat: 31.9454, lng: 35.9284 },
-        { name: "Zarqa", lat: 32.0728, lng: 36.0880 },
-        { name: "Aqaba", lat: 29.5321, lng: 35.0063 }
-      ],
-      "LBN": [
-        { name: "Beirut", lat: 33.8938, lng: 35.5018 },
-        { name: "Tripoli", lat: 34.4333, lng: 35.8333 },
-        { name: "Sidon", lat: 33.5631, lng: 35.3689 }
-      ],
-      "IRQ": [
-        { name: "Baghdad", lat: 33.3152, lng: 44.3661 },
-        { name: "Basra", lat: 30.5081, lng: 47.7835 },
-        { name: "Erbil", lat: 36.1901, lng: 44.0091 }
-      ],
-      "IRN": [
-        { name: "Tehran", lat: 35.6892, lng: 51.3890 },
-        { name: "Mashhad", lat: 36.2972, lng: 59.6062 },
-        { name: "Isfahan", lat: 32.6546, lng: 51.6680 },
-        { name: "Shiraz", lat: 29.5918, lng: 52.5837 }
-      ],
-      "OMN": [
-        { name: "Muscat", lat: 23.5880, lng: 58.3829 },
-        { name: "Salalah", lat: 17.0151, lng: 54.0924 },
-        { name: "Sohar", lat: 24.3461, lng: 56.7075 }
+        { name: "Edinburgh", lat: 55.9533, lng: -3.1883 }
       ]
     };
 
@@ -1274,7 +905,6 @@
       const iso3 = getCountryIso3(feature);
       const iso2 = (p.ISO_A2 || p.iso_a2 || p.POSTAL || p.WB_A2 || "").toUpperCase();
 
-      // Check ISO3 mapped key
       let mappedKey = iso3;
       if (!CITIES_DATABASE[mappedKey]) {
         if (iso2 && CITIES_DATABASE[iso2]) mappedKey = iso2;
@@ -1287,12 +917,10 @@
         return { ...chosen };
       }
 
-      // Fallback using authentic real capital names
       const realCap = REAL_CAPITALS_DATABASE[iso3] || 
                       REAL_CAPITALS_DATABASE[cName] || 
                       (COUNTRY_ISO_MAP[cName.toLowerCase()] && REAL_CAPITALS_DATABASE[COUNTRY_ISO_MAP[cName.toLowerCase()]]) ||
-                      p.CAPITAL || p.CAP_NAME || p.ADMIN_CAPITAL || 
-                      cName;
+                      p.CAPITAL || p.CAP_NAME || p.ADMIN_CAPITAL || cName;
 
       const centroid = getFeatureCentroid(feature);
 
@@ -1326,7 +954,6 @@
 
       const drive = LEFT_DRIVE_ISO.has(iso2.toUpperCase()) ? "Left" : "Right";
       const tld = "." + iso2.toLowerCase();
-      const flag = getFlagEmoji(iso2);
       const capName = REAL_CAPITALS_DATABASE[iso3] || REAL_CAPITALS_DATABASE[cName] || p.CAPITAL || p.CAP_NAME || fallback.capital || cName;
 
       const colorOptions = ["Red", "Blue", "Green", "Yellow", "White"];
@@ -1346,7 +973,6 @@
         drive: drive,
         tld: tld,
         mainColor: fallback.mainColor || fallbackColor,
-        flag: flag,
         letter: cName[0].toUpperCase()
       };
     }
@@ -1373,8 +999,7 @@
 
       const tier4Pool = [
         { title: "Continent", icon: "fa-globe", text: `Continent: <strong class="text-white font-bold">${meta.continent}</strong>` },
-        { title: "Capital City", icon: "fa-building-columns", text: `Capital City: <strong class="text-amber-300 font-bold">${meta.capital}</strong>` },
-        { title: "Flag Emoji", icon: "fa-flag", text: `Flag: <span class="text-base">${meta.flag}</span>` }
+        { title: "Capital City", icon: "fa-building-columns", text: `Capital City: <strong class="text-amber-300 font-bold">${meta.capital}</strong>` }
       ];
 
       const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -1385,14 +1010,7 @@
       const clue4 = getRandom(tier4Pool);
 
       const includeShape = Math.random() < 0.5;
-      let clue5;
-
-      if (includeShape) {
-        clue5 = { title: "Shape Outline", icon: "fa-draw-polygon", isSilhouette: true };
-      } else {
-        const remainingTier4 = tier4Pool.filter(c => c.title !== clue4.title);
-        clue5 = getRandom(remainingTier4);
-      }
+      let clue5 = includeShape ? { title: "Shape Outline", icon: "fa-draw-polygon", isSilhouette: true } : getRandom(tier4Pool.filter(c => c.title !== clue4.title));
 
       return [
         { num: 1, ...clue1, slotId: 'clue-slot-1' },
@@ -1511,7 +1129,7 @@
         historyHtml = `
           <div class="glass-card p-3 rounded-xl border border-slate-700/50 text-[11px] text-slate-400 text-center animate-fade-in pointer-events-auto">
             <i class="fa-solid fa-compass text-amber-400 text-lg mb-1 block"></i>
-            <span>Click any country on the globe & lock in to check how close you are!</span>
+            <span>Click any country on the globe and lock in to check proximity!</span>
           </div>
         `;
       } else {
@@ -1548,77 +1166,6 @@
           </div>
         </div>
       `;
-    }
-
-    function renderLegend() {
-      const legendDiv = document.getElementById('globe-legend');
-      if (!legendDiv) return;
-
-      if (gameMode === 'guesser') {
-        legendDiv.innerHTML = `
-          <div class="flex items-center space-x-1">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow"></span>
-            <span class="font-semibold text-amber-300">Selected</span>
-          </div>
-          <div class="flex items-center space-x-1">
-            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
-            <span class="font-semibold text-red-300">Wrong</span>
-          </div>
-          <div class="flex items-center space-x-1">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow"></span>
-            <span class="font-semibold text-emerald-300">Win</span>
-          </div>
-          <div class="flex items-center space-x-1">
-            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow"></span>
-            <span class="font-semibold text-blue-400">Answer</span>
-          </div>
-        `;
-      } else if (gameMode === 'hotcold') {
-        legendDiv.innerHTML = `
-          <div class="flex items-center space-x-1">
-            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
-            <span class="font-semibold text-red-300">Hot (&lt;2.5k)</span>
-          </div>
-          <div class="flex items-center space-x-1">
-            <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block shadow"></span>
-            <span class="font-semibold text-yellow-300">Warm (&lt;5k)</span>
-          </div>
-          <div class="flex items-center space-x-1">
-            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow"></span>
-            <span class="font-semibold text-blue-300">Cold (&gt;5k)</span>
-          </div>
-          <div class="flex items-center space-x-1">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow"></span>
-            <span class="font-semibold text-emerald-300">Win</span>
-          </div>
-        `;
-      } else if (gameMode === 'trivia') {
-        legendDiv.innerHTML = `
-          <div class="flex items-center space-x-1">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow"></span>
-            <span class="font-semibold text-amber-300">Selected</span>
-          </div>
-          <div class="flex items-center space-x-1">
-            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
-            <span class="font-semibold text-red-300">Wrong Try</span>
-          </div>
-          <div class="flex items-center space-x-1">
-            <span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block shadow"></span>
-            <span class="font-semibold text-purple-300">Trivia Target</span>
-          </div>
-        `;
-      } else {
-        legendDiv.innerHTML = `
-          <div class="flex items-center space-x-1">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow"></span>
-            <span class="font-semibold text-amber-300">Your Pin</span>
-          </div>
-          <div class="flex items-center space-x-1">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow"></span>
-            <span class="font-semibold text-emerald-300">Target City</span>
-          </div>
-        `;
-      }
     }
 
     function renderTriviaSidebar() {
@@ -1679,7 +1226,7 @@
               </div>
               <div class="flex items-start space-x-2 text-slate-400">
                 <span class="bg-slate-800 text-slate-400 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0">2</span>
-                <span>Globe will zoom in & ask you to pinpoint a city!</span>
+                <span>Globe zooms in to pinpoint a specific city!</span>
               </div>
             </div>
           </div>
@@ -1696,7 +1243,7 @@
             <hr class="border-slate-800 my-2">
             <div class="text-[11px] text-slate-300 flex items-center space-x-1.5">
               <i class="fa-solid fa-hand-pointer text-amber-400 animate-bounce"></i>
-              <span>Click map to place your pin!</span>
+              <span>Click map surface to place your pin!</span>
             </div>
           </div>
         `;
@@ -1724,6 +1271,219 @@
       }
     }
 
+    function renderImpactSidebar(distKm = null, radDiffKm = null, overallAccuracy = null) {
+      const container = document.getElementById('sidebar-container');
+      if (!container || !targetMeteor) return;
+
+      if (!impactGuessLoc) {
+        container.innerHTML = `
+          <div class="glass-card p-3 rounded-xl border border-orange-500/40 text-xs shadow-md animate-fade-in space-y-2.5 pointer-events-auto">
+            <div class="flex items-center justify-between">
+              <div class="font-bold text-orange-300 flex items-center space-x-1.5">
+                <i class="fa-solid fa-meteor text-orange-400 text-sm animate-pulse"></i>
+                <span>Impact Mode</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-md bg-orange-500/20 text-orange-300 border border-orange-500/40 text-[10px] font-mono">Crater Guesser</span>
+            </div>
+
+            <div class="glass-card p-2.5 rounded-lg border border-orange-500/30 bg-slate-900/70 text-slate-200">
+              <div class="text-[10px] uppercase tracking-wider font-extrabold text-amber-400">Target Meteorite Event</div>
+              <div class="text-sm font-black text-white mt-0.5 flex items-center space-x-1.5">
+                <i class="fa-solid fa-meteor text-orange-400"></i>
+                <span>${targetMeteor.name}</span>
+              </div>
+              <div class="text-[10px] text-slate-400 mt-1"><i class="fa-solid fa-earth-americas text-teal-400 mr-1"></i>Region: ${targetMeteor.location}</div>
+            </div>
+
+            <div class="text-[11px] text-slate-300 space-y-2">
+              <div class="flex items-start space-x-2">
+                <span class="bg-orange-500/20 text-orange-300 border border-orange-500/40 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0">1</span>
+                <span>Click anywhere on the globe to place your crater center.</span>
+              </div>
+              <div class="flex items-start space-x-2 text-slate-400">
+                <span class="bg-slate-800 text-slate-400 rounded-full w-4 h-4 flex items-center justify-center font-bold text-[10px] shrink-0">2</span>
+                <span>Drag the edge of the gray circle or use controls to set radius!</span>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (!gameOver) {
+        container.innerHTML = `
+          <div class="glass-card p-3 rounded-xl border border-orange-500/40 text-xs shadow-md animate-fade-in space-y-2.5 pointer-events-auto">
+            <div class="flex items-center justify-between">
+              <div class="font-bold text-orange-300 flex items-center space-x-1.5">
+                <i class="fa-solid fa-meteor text-orange-400 text-sm"></i>
+                <span>Target Crater</span>
+              </div>
+              <span class="text-[10px] text-amber-300 font-mono font-bold truncate max-w-[110px]">${targetMeteor.name}</span>
+            </div>
+
+            <!-- Radius Controls Box -->
+            <div class="glass-card p-2.5 rounded-lg border border-slate-700/80 bg-slate-900/80 space-y-2">
+              <div class="flex items-center justify-between text-[11px]">
+                <span class="text-slate-300 font-semibold flex items-center space-x-1">
+                  <i class="fa-solid fa-circle-dot text-amber-400"></i>
+                  <span>Guessed Radius:</span>
+                </span>
+                <span class="text-amber-300 font-extrabold font-mono text-xs" id="radius-display-text">
+                  ${impactGuessRadius.toFixed(1)} km <span class="text-[10px] text-slate-400">(${(impactGuessRadius * 0.621371).toFixed(1)} mi)</span>
+                </span>
+              </div>
+
+              <input id="impact-radius-slider" type="range" min="0.1" max="300" step="0.5" value="${impactGuessRadius}" 
+                     class="w-full accent-amber-400 bg-slate-800 rounded-lg h-2 cursor-pointer">
+
+              <div class="flex items-center justify-between gap-1 pt-1">
+                <button onclick="adjustImpactRadius(-10)" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold border border-slate-700">-10k</button>
+                <button onclick="adjustImpactRadius(-1)" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold border border-slate-700">-1k</button>
+                <button onclick="adjustImpactRadius(1)" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold border border-slate-700">+1k</button>
+                <button onclick="adjustImpactRadius(10)" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold border border-slate-700">+10k</button>
+              </div>
+
+              <!-- Quick Radius Presets -->
+              <div class="grid grid-cols-4 gap-1 pt-1 border-t border-slate-800/80">
+                <button onclick="setImpactRadius(1)" class="py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[9px] font-bold border border-amber-500/30">1 km</button>
+                <button onclick="setImpactRadius(15)" class="py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[9px] font-bold border border-amber-500/30">15 km</button>
+                <button onclick="setImpactRadius(50)" class="py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[9px] font-bold border border-amber-500/30">50 km</button>
+                <button onclick="setImpactRadius(100)" class="py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-[9px] font-bold border border-amber-500/30">100 km</button>
+              </div>
+            </div>
+
+            <div class="text-[10px] text-slate-400 flex items-center space-x-1.5">
+              <i class="fa-solid fa-hand-pointer text-amber-400"></i>
+              <span>Tip: Click and drag directly on the circle edge!</span>
+            </div>
+          </div>
+        `;
+
+        setTimeout(() => {
+          const slider = document.getElementById('impact-radius-slider');
+          if (slider) {
+            slider.addEventListener('input', (e) => {
+              updateImpactRadius(parseFloat(e.target.value));
+            });
+          }
+        }, 30);
+
+      } else {
+        container.innerHTML = `
+          <div class="glass-card p-3 rounded-xl border border-emerald-500/40 text-xs shadow-md animate-fade-in space-y-2 pointer-events-auto">
+            <div class="flex items-center justify-between">
+              <div class="font-extrabold text-emerald-400 flex items-center space-x-1.5">
+                <i class="fa-solid fa-bullseye text-emerald-400"></i>
+                <span>Impact Evaluation</span>
+              </div>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold text-[10px]">
+                ${overallAccuracy}% Accuracy
+              </span>
+            </div>
+
+            <div class="text-xs font-black text-white flex items-center space-x-1.5">
+              <i class="fa-solid fa-meteor text-orange-400"></i>
+              <span>${targetMeteor.name}</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-1.5 pt-1">
+              <div class="glass-card p-2 rounded-lg border border-slate-700/60 bg-slate-900/60">
+                <div class="text-[9px] text-slate-400 font-bold uppercase">Distance Off</div>
+                <div class="text-xs font-extrabold text-amber-300 font-mono mt-0.5">${distKm !== null ? distKm.toLocaleString() : 0} km</div>
+              </div>
+              <div class="glass-card p-2 rounded-lg border border-slate-700/60 bg-slate-900/60">
+                <div class="text-[9px] text-slate-400 font-bold uppercase">Radius Error</div>
+                <div class="text-xs font-extrabold text-teal-300 font-mono mt-0.5">${radDiffKm !== null ? radDiffKm.toFixed(1) : 0} km</div>
+              </div>
+            </div>
+
+            <div class="glass-card p-2 rounded-lg border border-slate-700/60 bg-slate-900/80 text-[10px] space-y-1">
+              <div class="flex justify-between text-slate-300">
+                <span>True Radius:</span>
+                <span class="font-bold text-emerald-400 font-mono">${targetMeteor.radius} km</span>
+              </div>
+              <div class="flex justify-between text-slate-300">
+                <span>Your Radius:</span>
+                <span class="font-bold text-amber-300 font-mono">${impactGuessRadius.toFixed(1)} km</span>
+              </div>
+            </div>
+
+            <div class="glass-card p-2 rounded-lg border border-slate-700/50 bg-slate-950/70 text-[10px] text-slate-300 leading-normal">
+              <div class="font-bold text-amber-400 mb-0.5"><i class="fa-solid fa-volcano text-red-400 mr-1"></i>Geological Fact</div>
+              <div>${targetMeteor.fact}</div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function renderLegend() {
+      const legendDiv = document.getElementById('globe-legend');
+      if (!legendDiv) return;
+
+      if (gameMode === 'guesser') {
+        legendDiv.innerHTML = `
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow"></span>
+            <span class="font-semibold text-amber-300">Selected</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
+            <span class="font-semibold text-red-300">Wrong</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow"></span>
+            <span class="font-semibold text-emerald-300">Win</span>
+          </div>
+        `;
+      } else if (gameMode === 'hotcold') {
+        legendDiv.innerHTML = `
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
+            <span class="font-semibold text-red-300">Hot (&lt;2.5k)</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block shadow"></span>
+            <span class="font-semibold text-yellow-300">Warm (&lt;5k)</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow"></span>
+            <span class="font-semibold text-blue-300">Cold (&gt;5k)</span>
+          </div>
+        `;
+      } else if (gameMode === 'trivia') {
+        legendDiv.innerHTML = `
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow"></span>
+            <span class="font-semibold text-amber-300">Selected</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
+            <span class="font-semibold text-red-300">Wrong Try</span>
+          </div>
+        `;
+      } else if (gameMode === 'impact') {
+        legendDiv.innerHTML = `
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-400 border border-white inline-block shadow"></span>
+            <span class="font-semibold text-slate-300">Guessed Crater</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-white inline-block shadow"></span>
+            <span class="font-semibold text-emerald-300">True Crater</span>
+          </div>
+        `;
+      } else {
+        legendDiv.innerHTML = `
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow"></span>
+            <span class="font-semibold text-amber-300">Your Pin</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow"></span>
+            <span class="font-semibold text-emerald-300">Target City</span>
+          </div>
+        `;
+      }
+    }
+
     function handleCityPinClick(lat, lng) {
       if (gameMode !== 'city' || cityStep !== 'pinpoint' || gameOver) return;
       sounds.playSelect();
@@ -1745,7 +1505,7 @@
       }
 
       const nameEl = document.getElementById('selected-country-name');
-      if (nameEl) nameEl.textContent = `📍 Pin Placed (${lat.toFixed(2)}°, ${lng.toFixed(2)}°)`;
+      if (nameEl) nameEl.textContent = `Pin Placed (${lat.toFixed(2)} deg, ${lng.toFixed(2)} deg)`;
 
       const lockBox = document.getElementById('lock-container');
       const btnLock = document.getElementById('btn-lock-guess');
@@ -1770,7 +1530,7 @@
         for (let b = 0; b < 6 && index < geoData.length; b++, index++) {
           cascadingRedSet.add(geoData[index]);
         }
-        if (worldGlobe) worldGlobe.polygonsData(geoData);
+        if (worldGlobe) worldGlobe.polygonsData(getPolygonsWithImpactCircles());
       }, 30);
     }
 
@@ -1791,19 +1551,25 @@
       placedPin = null;
       targetCity = null;
 
+      impactGuessLoc = null;
+      impactGuessRadius = 25;
+      targetMeteor = null;
+
       if (worldGlobe) {
         worldGlobe.htmlElementsData([]);
         worldGlobe.arcsData([]);
       }
 
-      if (gameMode === 'trivia') {
+      if (gameMode === 'impact') {
+        const randIdx = Math.floor(Math.random() * METEORITES_DATABASE.length);
+        targetMeteor = METEORITES_DATABASE[randIdx];
+      } else if (gameMode === 'trivia') {
         triviaQuestionIndex = 0;
         triviaScore = 0;
         triviaAttemptsLeft = 2;
         triviaWrongAttemptsThisQuestion.clear();
         triviaQuestionsForRound = [];
 
-        // Pick 4 distinct random target countries
         const shuffled = [...geoData].sort(() => 0.5 - Math.random());
         const chosenFeatures = shuffled.slice(0, 4);
 
@@ -1851,17 +1617,18 @@
         renderHotColdSidebar();
       } else if (gameMode === 'trivia') {
         renderTriviaSidebar();
+      } else if (gameMode === 'impact') {
+        renderImpactSidebar();
       } else {
         renderCitySidebar();
       }
 
       if (worldGlobe) {
-        worldGlobe.polygonsData(geoData);
+        worldGlobe.polygonsData(getPolygonsWithImpactCircles());
         worldGlobe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1200);
       }
     }
 
-    // Toast Feedback Banner Trigger
     function showFeedbackToast(message, type = 'info') {
       const toast = document.getElementById('feedback-toast');
       const content = document.getElementById('feedback-toast-content');
@@ -1885,6 +1652,66 @@
         toast.classList.add('hidden', '-translate-y-4', 'opacity-0');
         toast.style.display = 'none';
       }, 3200);
+    }
+
+    // Direct Edge Dragging Controller on Globe Canvas
+    function setupImpactEdgeDrag() {
+      const container = document.getElementById('globe-container');
+      if (!container) return;
+
+      const getPointerGlobeCoords = (e) => {
+        const rect = container.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+        const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+        if (worldGlobe && typeof worldGlobe.toGlobeCoordinates === 'function') {
+          return worldGlobe.toGlobeCoordinates(clientX - rect.left, clientY - rect.top);
+        }
+        return null;
+      };
+
+      const onPointerDown = (e) => {
+        if (gameMode !== 'impact' || gameOver || !impactGuessLoc) return;
+
+        const coords = getPointerGlobeCoords(e);
+        if (!coords) return;
+
+        const distToCenter = getDistanceKm(coords.lat, coords.lng, impactGuessLoc.lat, impactGuessLoc.lng);
+        const edgeTolerance = Math.max(30, impactGuessRadius * 0.35);
+
+        // Check if user clicked near the perimeter of the gray crater circle
+        if (Math.abs(distToCenter - impactGuessRadius) <= edgeTolerance) {
+          isDraggingImpactRadius = true;
+          if (worldGlobe.controls()) worldGlobe.controls().enabled = false;
+
+          const onPointerMove = (moveEv) => {
+            if (!isDraggingImpactRadius) return;
+            const moveCoords = getPointerGlobeCoords(moveEv);
+            if (moveCoords) {
+              const newDist = getDistanceKm(moveCoords.lat, moveCoords.lng, impactGuessLoc.lat, impactGuessLoc.lng);
+              const clampedRadius = Math.max(0.1, Math.min(300, Math.round(newDist * 10) / 10));
+              updateImpactRadius(clampedRadius);
+            }
+          };
+
+          const onPointerUp = () => {
+            isDraggingImpactRadius = false;
+            if (worldGlobe.controls()) worldGlobe.controls().enabled = true;
+            window.removeEventListener('pointermove', onPointerMove);
+            window.removeEventListener('pointerup', onPointerUp);
+            window.removeEventListener('touchmove', onPointerMove);
+            window.removeEventListener('touchend', onPointerUp);
+          };
+
+          window.addEventListener('pointermove', onPointerMove);
+          window.addEventListener('pointerup', onPointerUp);
+          window.addEventListener('touchmove', onPointerMove, { passive: false });
+          window.addEventListener('touchend', onPointerUp);
+
+          e.stopPropagation();
+        }
+      };
+
+      container.addEventListener('pointerdown', onPointerDown);
     }
 
     async function ensureGlobeLoaded() {
@@ -1955,7 +1782,6 @@
         };
         const { w, h } = getDimensions();
 
-        // Create embedded ocean texture so globe rendering never depends on external image assets
         const oceanTexture = (() => {
           const canvas = document.createElement('canvas');
           canvas.width = 1024;
@@ -1986,8 +1812,11 @@
           .showAtmosphere(true)
           .atmosphereColor('#38bdf8')
           .atmosphereAltitude(0.22)
-          .polygonsData(geoData)
+          .polygonsData(getPolygonsWithImpactCircles())
           .polygonCapColor(d => {
+            if (d.properties && d.properties.isGuessCircle) return 'rgba(156, 163, 175, 0.45)';
+            if (d.properties && d.properties.isTargetCircle) return 'rgba(16, 185, 129, 0.55)';
+
             if (gameOver && d === targetCountryFeature) {
               return gameWon ? 'rgba(16, 185, 129, 0.95)' : 'rgba(59, 130, 246, 0.95)';
             }
@@ -2013,9 +1842,18 @@
             }
             return 'rgba(30, 41, 59, 0.85)';
           })
-          .polygonSideColor(() => 'rgba(15, 23, 42, 0.7)')
-          .polygonStrokeColor(() => 'rgba(148, 163, 184, 0.45)')
+          .polygonSideColor(d => {
+            if (d.properties && (d.properties.isGuessCircle || d.properties.isTargetCircle)) return 'rgba(255, 255, 255, 0.2)';
+            return 'rgba(15, 23, 42, 0.7)';
+          })
+          .polygonStrokeColor(d => {
+            if (d.properties && d.properties.isGuessCircle) return 'rgba(229, 231, 235, 0.95)';
+            if (d.properties && d.properties.isTargetCircle) return 'rgba(52, 211, 153, 0.95)';
+            return 'rgba(148, 163, 184, 0.45)';
+          })
           .polygonAltitude(d => {
+            if (d.properties && d.properties.isGuessCircle) return 0.025;
+            if (d.properties && d.properties.isTargetCircle) return 0.03;
             if (gameMode === 'city') {
               if (d === targetCountryFeature) return 0.008;
               return 0.008;
@@ -2031,11 +1869,34 @@
           .htmlAltitude(d => d.altitude !== undefined ? d.altitude : 0.0082)
           .htmlElement(d => {
             const el = document.createElement('div');
-            el.setAttribute('style', 'pointer-events: none !important; transform: translate(0, -50%); width: 24px; height: 32px; display: flex; justify-content: center;');
+            el.setAttribute('style', 'pointer-events: none !important; transform: translate(0, -50%); display: flex; justify-content: center;');
             el.innerHTML = d.html;
             return el;
           })
           .onPolygonClick((feature, event, coords) => {
+            if (gameMode === 'impact' && !gameOver) {
+              if (coords && !isDraggingImpactRadius) {
+                sounds.playSelect();
+                impactGuessLoc = { lat: coords.lat, lng: coords.lng };
+                worldGlobe.polygonsData(getPolygonsWithImpactCircles());
+
+                const nameEl = document.getElementById('selected-country-name');
+                if (nameEl) nameEl.textContent = `Impact Center (${coords.lat.toFixed(2)} deg, ${coords.lng.toFixed(2)} deg)`;
+
+                const lockBox = document.getElementById('lock-container');
+                const btnLock = document.getElementById('btn-lock-guess');
+                if (lockBox) {
+                  lockBox.style.display = 'flex';
+                  lockBox.classList.remove('hidden', 'scale-75', 'opacity-0');
+                  lockBox.classList.add('scale-100', 'opacity-100');
+                  if (btnLock) btnLock.style.pointerEvents = 'auto';
+                }
+
+                renderImpactSidebar();
+              }
+              return;
+            }
+
             if (gameMode === 'city' && cityStep === 'pinpoint') {
               if (coords) {
                 handleCityPinClick(coords.lat, coords.lng);
@@ -2045,6 +1906,29 @@
             if (feature) selectCountryAndRotate(feature, false);
           })
           .onGlobeClick((coords) => {
+            if (gameMode === 'impact' && !gameOver && coords) {
+              if (!isDraggingImpactRadius) {
+                sounds.playSelect();
+                impactGuessLoc = { lat: coords.lat, lng: coords.lng };
+                worldGlobe.polygonsData(getPolygonsWithImpactCircles());
+
+                const nameEl = document.getElementById('selected-country-name');
+                if (nameEl) nameEl.textContent = `Impact Center (${coords.lat.toFixed(2)} deg, ${coords.lng.toFixed(2)} deg)`;
+
+                const lockBox = document.getElementById('lock-container');
+                const btnLock = document.getElementById('btn-lock-guess');
+                if (lockBox) {
+                  lockBox.style.display = 'flex';
+                  lockBox.classList.remove('hidden', 'scale-75', 'opacity-0');
+                  lockBox.classList.add('scale-100', 'opacity-100');
+                  if (btnLock) btnLock.style.pointerEvents = 'auto';
+                }
+
+                renderImpactSidebar();
+              }
+              return;
+            }
+
             if (gameMode === 'city' && cityStep === 'pinpoint' && coords) {
               handleCityPinClick(coords.lat, coords.lng);
             }
@@ -2053,6 +1937,8 @@
         worldGlobe.controls().autoRotate = false;
         worldGlobe.controls().enableZoom = true;
         worldGlobe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 });
+
+        setupImpactEdgeDrag();
 
         const resizeGlobe = () => {
           if (worldGlobe && globeDiv) {
@@ -2112,6 +1998,51 @@
             }
           };
 
+          if (gameMode === 'impact') {
+            if (!impactGuessLoc || !targetMeteor) return;
+
+            gameOver = true;
+            gameWon = true;
+
+            const distKm = getDistanceKm(impactGuessLoc.lat, impactGuessLoc.lng, targetMeteor.lat, targetMeteor.lng);
+            const radDiffKm = Math.abs(impactGuessRadius - targetMeteor.radius);
+
+            const distScore = Math.max(0, 100 - (distKm / 35));
+            const maxRadMargin = Math.max(targetMeteor.radius * 2, 20);
+            const radScore = Math.max(0, 100 - (radDiffKm / maxRadMargin) * 100);
+            const overallAccuracy = Math.round(distScore * 0.65 + radScore * 0.35);
+
+            if (overallAccuracy > 70) {
+              sounds.playWin();
+              if (window.confetti) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            } else {
+              sounds.playLockIn();
+            }
+
+            if (worldGlobe) {
+              const targetAlt = Math.max(0.12, Math.min(1.2, targetMeteor.radius * 0.012 + 0.18));
+              worldGlobe.pointOfView({ lat: targetMeteor.lat, lng: targetMeteor.lng, altitude: targetAlt }, 1600);
+              worldGlobe.polygonsData(getPolygonsWithImpactCircles());
+            }
+
+            const lockBox = document.getElementById('lock-container');
+            if (lockBox) {
+              lockBox.style.display = 'none';
+              lockBox.classList.remove('scale-100', 'opacity-100');
+              lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+            }
+
+            const winTextContainer = document.getElementById('win-text-container');
+            if (winTextContainer) {
+              winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-amber-300 border border-orange-500/50 shadow-2xl flex items-center space-x-2";
+              winTextContainer.innerHTML = `<span><i class="fa-solid fa-meteor text-orange-400 mr-1"></i> <strong>${targetMeteor.name}</strong> - ${overallAccuracy}% Accuracy (${distKm.toLocaleString()} km off)!</span>`;
+            }
+
+            renderImpactSidebar(distKm, radDiffKm, overallAccuracy);
+            revealPlayAnother();
+            return;
+          }
+
           if (gameMode === 'trivia') {
             if (!selectedFeature) return;
 
@@ -2123,7 +2054,7 @@
             if (isCorrect) {
               sounds.playWin();
               triviaScore++;
-              showFeedbackToast(`🎉 Correct! ${targetName} is right! (+1 Pt)`, 'win');
+              showFeedbackToast(`<i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Correct! ${targetName} is right! (+1 Pt)`, 'win');
 
               triviaQuestionIndex++;
               triviaAttemptsLeft = 2;
@@ -2144,7 +2075,7 @@
                 const winTextContainer = document.getElementById('win-text-container');
                 if (winTextContainer) {
                   winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-purple-300 border border-purple-500/50 shadow-2xl flex items-center space-x-2";
-                  winTextContainer.innerHTML = `<span>🧠 <strong>Trivia Game Finished!</strong> Score: ${triviaScore} / 4 Correct!</span>`;
+                  winTextContainer.innerHTML = `<span><i class="fa-solid fa-brain text-purple-400 mr-1"></i> <strong>Trivia Game Finished!</strong> Score: ${triviaScore} / 4 Correct!</span>`;
                 }
 
                 if (window.confetti && triviaScore >= 2) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
@@ -2153,7 +2084,7 @@
                 targetCountryFeature = triviaQuestionsForRound[triviaQuestionIndex].feature;
                 targetMeta = extractCountryMeta(targetCountryFeature);
                 renderTriviaSidebar();
-                worldGlobe.polygonsData(geoData);
+                worldGlobe.polygonsData(getPolygonsWithImpactCircles());
               }
               return;
             } else {
@@ -2170,11 +2101,11 @@
               }
 
               if (triviaAttemptsLeft > 0) {
-                showFeedbackToast(`❌ Incorrect! ${selName} is wrong. 1 attempt remaining!`, 'wrong');
+                showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! ${selName} is wrong. 1 attempt remaining!`, 'wrong');
                 renderTriviaSidebar();
-                worldGlobe.polygonsData(geoData);
+                worldGlobe.polygonsData(getPolygonsWithImpactCircles());
               } else {
-                showFeedbackToast(`❌ Out of tries! The correct answer was <strong>${targetName}</strong>.`, 'wrong');
+                showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of tries! The correct answer was <strong>${targetName}</strong>.`, 'wrong');
                 
                 triviaQuestionIndex++;
                 triviaAttemptsLeft = 2;
@@ -2187,7 +2118,7 @@
                   const winTextContainer = document.getElementById('win-text-container');
                   if (winTextContainer) {
                     winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-purple-300 border border-purple-500/50 shadow-2xl flex items-center space-x-2";
-                    winTextContainer.innerHTML = `<span>🧠 <strong>Trivia Game Finished!</strong> Score: ${triviaScore} / 4 Correct!</span>`;
+                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-brain text-purple-400 mr-1"></i> <strong>Trivia Game Finished!</strong> Score: ${triviaScore} / 4 Correct!</span>`;
                   }
 
                   revealPlayAnother();
@@ -2195,7 +2126,7 @@
                   targetCountryFeature = triviaQuestionsForRound[triviaQuestionIndex].feature;
                   targetMeta = extractCountryMeta(targetCountryFeature);
                   renderTriviaSidebar();
-                  worldGlobe.polygonsData(geoData);
+                  worldGlobe.polygonsData(getPolygonsWithImpactCircles());
                 }
               }
               return;
@@ -2218,7 +2149,7 @@
               const targetAltitude = Math.max(0.12, Math.min(0.75, maxSpan * 0.016 + 0.08));
 
               if (worldGlobe) {
-                worldGlobe.polygonsData(geoData);
+                worldGlobe.polygonsData(getPolygonsWithImpactCircles());
                 worldGlobe.pointOfView({ lat: centroid.lat, lng: centroid.lng, altitude: targetAltitude }, 1400);
               }
 
@@ -2230,7 +2161,7 @@
               }
 
               renderCitySidebar();
-              showFeedbackToast(`🔍 Zoomed into ${countryName}! Pinpoint <strong>${targetCity.name}</strong>!`, 'info');
+              showFeedbackToast(`<i class="fa-solid fa-magnifying-glass-location text-amber-400 mr-1"></i> Zoomed into ${countryName}! Pinpoint <strong>${targetCity.name}</strong>!`, 'info');
               return;
             }
 
@@ -2287,7 +2218,7 @@
               const winTextContainer = document.getElementById('win-text-container');
               if (winTextContainer) {
                 winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-emerald-400 border border-emerald-500/50 shadow-2xl flex items-center space-x-2";
-                winTextContainer.innerHTML = `<span>🎯 <strong>${targetCity.name}</strong> (${countryName}) is ${dist.toLocaleString()} km away!</span>`;
+                winTextContainer.innerHTML = `<span><i class="fa-solid fa-bullseye text-emerald-400 mr-1"></i> <strong>${targetCity.name}</strong> (${countryName}) is ${dist.toLocaleString()} km away!</span>`;
               }
 
               renderCitySidebar(dist);
@@ -2307,7 +2238,7 @@
             gameOver = true;
             gameWon = true;
             sounds.playWin();
-            showFeedbackToast(`🎉 Correct! ${targetName} is the mystery country!`, 'win');
+            showFeedbackToast(`<i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Correct! ${targetName} is the mystery country!`, 'win');
 
             if (gameMode === 'guesser') {
               currentClueIndex = 5;
@@ -2323,7 +2254,7 @@
               renderHotColdSidebar();
             }
 
-            worldGlobe.polygonsData(geoData);
+            worldGlobe.polygonsData(getPolygonsWithImpactCircles());
 
             if (window.confetti) {
               confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
@@ -2342,7 +2273,7 @@
             const winTextContainer = document.getElementById('win-text-container');
             if (winTextContainer) {
               winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-emerald-400 border border-emerald-500/50 shadow-2xl flex items-center space-x-2";
-              winTextContainer.innerHTML = `<span>🎉 Correct! It's <span class="underline font-bold">${targetName}</span>!</span>`;
+              winTextContainer.innerHTML = `<span><i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Correct! It's <span class="underline font-bold">${targetName}</span>!</span>`;
             }
 
             revealPlayAnother();
@@ -2362,9 +2293,9 @@
 
               if (currentClueIndex < 5) {
                 currentClueIndex++;
-                showFeedbackToast(`❌ Incorrect! ${selName} is wrong. Clue #${currentClueIndex} unlocked!`, 'wrong');
+                showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! ${selName} is wrong. Clue #${currentClueIndex} unlocked!`, 'wrong');
                 renderGuesserSidebar();
-                worldGlobe.polygonsData(geoData);
+                worldGlobe.polygonsData(getPolygonsWithImpactCircles());
               } else {
                 gameOver = true;
                 gameWon = false;
@@ -2378,7 +2309,7 @@
                 const winTextContainer = document.getElementById('win-text-container');
                 if (winTextContainer) {
                   winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
-                  winTextContainer.innerHTML = `<span>❌ Out of clues! It was <span class="underline font-bold">${targetName}</span></span>`;
+                  winTextContainer.innerHTML = `<span><i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of clues! It was <span class="underline font-bold">${targetName}</span></span>`;
                 }
 
                 revealPlayAnother();
@@ -2418,7 +2349,7 @@
                 const winTextContainer = document.getElementById('win-text-container');
                 if (winTextContainer) {
                   winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
-                  winTextContainer.innerHTML = `<span>❌ Out of 10 guesses! It was <span class="underline font-bold">${targetName}</span></span>`;
+                  winTextContainer.innerHTML = `<span><i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of 10 guesses! It was <span class="underline font-bold">${targetName}</span></span>`;
                 }
 
                 revealPlayAnother();
@@ -2426,7 +2357,7 @@
                 const toastType = dist < 2500 ? 'hot' : (dist < 5000 ? 'info' : 'cold');
                 showFeedbackToast(`<i class="fa-solid ${tempInfo.icon}"></i> ${tempInfo.name}! ${selName} is ${dist.toLocaleString()} km away. (${MAX_HOTCOLD_GUESSES - hotColdGuessesCount} guesses left)`, toastType);
                 renderHotColdSidebar();
-                worldGlobe.polygonsData(geoData);
+                worldGlobe.polygonsData(getPolygonsWithImpactCircles());
               }
             }
           }
@@ -2440,6 +2371,7 @@
       const btnHotCold = document.getElementById('mode-hotcold');
       const btnCity = document.getElementById('mode-city');
       const btnTrivia = document.getElementById('mode-trivia');
+      const btnImpact = document.getElementById('mode-impact');
 
       if (modeBtn && modeMenu) {
         modeBtn.addEventListener('click', (e) => {
@@ -2453,7 +2385,7 @@
           }
         });
 
-        if (btnGuesser && btnHotCold && btnCity && btnTrivia) {
+        if (btnGuesser && btnHotCold && btnCity && btnTrivia && btnImpact) {
           btnGuesser.addEventListener('click', () => {
             if (gameMode === 'guesser') { modeMenu.classList.add('hidden'); return; }
             gameMode = 'guesser';
@@ -2462,6 +2394,7 @@
             btnHotCold.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
             btnCity.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
             btnTrivia.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
+            btnImpact.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
             modeMenu.classList.add('hidden');
             startNewRound();
           });
@@ -2474,6 +2407,7 @@
             btnGuesser.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300";
             btnCity.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
             btnTrivia.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
+            btnImpact.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
             modeMenu.classList.add('hidden');
             startNewRound();
           });
@@ -2486,6 +2420,7 @@
             btnGuesser.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300";
             btnHotCold.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
             btnTrivia.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
+            btnImpact.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
             modeMenu.classList.add('hidden');
             startNewRound();
           });
@@ -2498,6 +2433,20 @@
             btnGuesser.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300";
             btnHotCold.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
             btnCity.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
+            btnImpact.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
+            modeMenu.classList.add('hidden');
+            startNewRound();
+          });
+
+          btnImpact.addEventListener('click', () => {
+            if (gameMode === 'impact') { modeMenu.classList.add('hidden'); return; }
+            gameMode = 'impact';
+            if (modeBadge) modeBadge.textContent = 'Impact Mode';
+            btnImpact.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-orange-300 bg-orange-950/40 mt-1";
+            btnGuesser.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300";
+            btnHotCold.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
+            btnCity.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
+            btnTrivia.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
             modeMenu.classList.add('hidden');
             startNewRound();
           });
