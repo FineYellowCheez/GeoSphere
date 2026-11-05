@@ -170,6 +170,13 @@
                 <div class="text-[10px] font-normal text-slate-400">Match the flag to its country on the globe</div>
               </div>
             </button>
+            <button id="mode-dontapply" class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-pink-300 mt-1">
+              <i class="fa-solid fa-ban text-pink-400 text-sm"></i>
+              <div>
+                <div>Application</div>
+                <div class="text-[10px] font-normal text-slate-400">5 rounds & 5 strikes. Pick fitting countries!</div>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -311,7 +318,361 @@
     let redCascadeInterval = null;
     let gameOver = false;
     let gameWon = false;
-    let gameMode = 'guesser'; // 'guesser', 'hotcold', 'trivia', 'impact', 'speedstate', 'chained', 'flagged'
+    let gameMode = 'guesser'; // 'guesser', 'hotcold', 'trivia', 'impact', 'speedstate', 'chained', 'flagged', 'dontapply'
+
+    // Don't Apply Mode State Variables
+    let dontApplyRoundIndex = 0;
+    let dontApplyStrikesLeft = 5;
+    let dontApplyRule = null;
+    let dontApplyWrongSet = new Set();
+    let dontApplySuccessSet = new Set();
+
+    const DONT_APPLY_RULES = [
+      // 1-10: Flag Colors & Design Features
+      {
+        prompt: "Select a country whose flag does NOT contain the color White.",
+        check: (f, meta) => {
+          const iso = getCountryIso3(f);
+          const noWhite = new Set([
+            "JAM", "SWE", "UKR", "ROU", "TCD", "COL", "ECU", "VEN", "ESP", "CHN", 
+            "VNM", "DEU", "BEL", "AGO", "MAR", "CMR", "COG", "GAB", "MNE", "GNB", 
+            "LKA", "PLW", "BGD", "KAZ", "ARM"
+          ]);
+          return noWhite.has(iso) || (meta.mainColor !== "White" && ["Blue", "Yellow", "Green", "Red", "Black"].includes(meta.mainColor) && !["USA", "FRA", "GBR", "RUS", "JPN", "CAN", "ITA", "AUS", "NZL", "ARG", "GRC", "FIN", "ISR"].includes(iso));
+        }
+      },
+      {
+        prompt: "Select a country whose flag has RED as a primary color.",
+        check: (f, meta) => meta.mainColor === "Red" || ["USA", "CAN", "MEX", "CHN", "JPN", "GBR", "DEU", "ESP", "TUR", "CHE", "NOR", "DNK", "AUT", "POL", "VNM", "KOR", "IDN", "MYS", "SGP", "EGY", "MAR", "TUN", "COL", "PER", "CHL"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country whose flag has GREEN as a primary color.",
+        check: (f, meta) => meta.mainColor === "Green" || ["BRA", "MEX", "ITA", "PRT", "SAU", "ZAF", "NGA", "KEN", "PAK", "BGD", "IRN", "DZA", "ETH", "IRQ", "AFG", "SYR", "CMR", "JAM"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country whose flag has BLUE as a primary color.",
+        check: (f, meta) => meta.mainColor === "Blue" || meta.mainColor === "Light Blue" || ["USA", "FRA", "GBR", "RUS", "AUS", "NZL", "ARG", "SWE", "FIN", "GRC", "UKR", "ISR", "ROU", "ISL", "COL"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country whose flag has YELLOW or GOLD in it.",
+        check: (f, meta) => meta.mainColor === "Yellow" || ["DEU", "ESP", "BRA", "SWE", "UKR", "COL", "ECU", "VEN", "ROU", "BEL", "TCD", "AGO", "VNM", "CHN", "ZAF", "MYS", "PHL", "GHA"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country whose flag features BLACK as a primary color.",
+        check: (f, meta) => meta.mainColor === "Black" || ["DEU", "BEL", "EGY", "ZAF", "KEN", "AGO", "JAM", "IRQ", "SYR", "YEM", "SDN", "AFG", "TCD", "UGA"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country whose flag does NOT contain the color RED.",
+        check: (f, meta) => {
+          const redIso = new Set(["USA", "CAN", "MEX", "CHN", "JPN", "GBR", "DEU", "ESP", "TUR", "CHE", "NOR", "DNK", "AUT", "POL", "VNM", "KOR", "IDN", "MYS", "SGP", "EGY", "MAR", "TUN", "COL", "PER", "CHL", "FRA", "ITA", "RUS", "AUS", "NZL", "BRA"]);
+          return !redIso.has(getCountryIso3(f));
+        }
+      },
+      {
+        prompt: "Select a country whose flag does NOT contain the color BLUE.",
+        check: (f, meta) => {
+          const blueIso = new Set(["USA", "FRA", "GBR", "RUS", "AUS", "NZL", "ARG", "SWE", "FIN", "GRC", "UKR", "ISR", "ROU", "ISL", "COL", "CHL", "CUB", "PRT", "BRA", "CZE", "SVK", "SVN", "HRV", "SRB"]);
+          return !blueIso.has(getCountryIso3(f));
+        }
+      },
+      {
+        prompt: "Select a country whose flag features a STAR or CRESCENT emblem.",
+        check: (f, meta) => ["USA", "CHN", "TUR", "PAK", "DZA", "MYS", "AUS", "NZL", "VNM", "SGP", "CUB", "SOM", "CHL", "GHA", "CMR", "TUN", "MAR", "EGY", "AZE", "TKM", "UZB", "PRK"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country whose flag has a Nordic Cross design.",
+        check: (f, meta) => ["SWE", "NOR", "FIN", "DNK", "ISL"].includes(getCountryIso3(f))
+      },
+
+      // 11-25: Geography & Regions
+      {
+        prompt: "Select a country located in SOUTH AMERICA.",
+        check: (f, meta) => meta.continent === "South America" || meta.subregion.includes("South America")
+      },
+      {
+        prompt: "Select a country located in AFRICA.",
+        check: (f, meta) => meta.continent === "Africa"
+      },
+      {
+        prompt: "Select a country located in ASIA.",
+        check: (f, meta) => meta.continent === "Asia"
+      },
+      {
+        prompt: "Select a country located in EUROPE.",
+        check: (f, meta) => meta.continent === "Europe"
+      },
+      {
+        prompt: "Select a country located in NORTH AMERICA.",
+        check: (f, meta) => meta.continent === "North America"
+      },
+      {
+        prompt: "Select a country located in OCEANIA / PACIFIC.",
+        check: (f, meta) => meta.continent === "Oceania" || ["AUS", "NZL", "FJI", "PNG", "PLW", "WSM", "TON", "VUT", "FSM", "NRU", "SLB", "KIR", "TUV"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country located in the SOUTHERN HEMISPHERE.",
+        check: (f, meta) => meta.hemisphere.includes("Southern")
+      },
+      {
+        prompt: "Select a country located in the NORTHERN HEMISPHERE.",
+        check: (f, meta) => meta.hemisphere.includes("Northern")
+      },
+      {
+        prompt: "Select a country located in the WESTERN HEMISPHERE.",
+        check: (f, meta) => meta.hemisphere.includes("Western")
+      },
+      {
+        prompt: "Select a country located in the EASTERN HEMISPHERE.",
+        check: (f, meta) => meta.hemisphere.includes("Eastern")
+      },
+      {
+        prompt: "Select a country located in the CARIBBEAN.",
+        check: (f, meta) => meta.subregion.includes("Caribbean") || ["CUB", "HTI", "DOM", "JAM", "BHS", "BRB", "TTO", "PRI"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country located in CENTRAL AMERICA.",
+        check: (f, meta) => meta.subregion.includes("Central America") || ["GTM", "HND", "SLV", "NIC", "CRI", "PAN", "BLZ"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country located in SOUTHEAST ASIA.",
+        check: (f, meta) => meta.subregion.includes("South-Eastern Asia") || ["IDN", "MYS", "THA", "VNM", "PHL", "SGP", "KHM", "LAO", "MMR", "BRN", "TLS"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country located in the MIDDLE EAST.",
+        check: (f, meta) => ["SAU", "ARE", "ISR", "JOR", "LBN", "IRQ", "IRN", "QAT", "KWT", "OMN", "YEM", "BHR", "SYR"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country located in SCANDINAVIA / NORDIC region.",
+        check: (f, meta) => ["SWE", "NOR", "FIN", "DNK", "ISL"].includes(getCountryIso3(f))
+      },
+
+      // 26-38: Borders & Land Status
+      {
+        prompt: "Select a LANDLOCKED country with no direct ocean coastline.",
+        check: (f, meta) => meta.coast === "Landlocked"
+      },
+      {
+        prompt: "Select a country with direct OCEAN COASTLINE (Not landlocked).",
+        check: (f, meta) => meta.coast === "Coastal"
+      },
+      {
+        prompt: "Select a country that shares NO land borders (Island Nation).",
+        check: (f, meta) => ["JPN", "AUS", "NZL", "GBR", "ISL", "PHL", "IDN", "MDG", "LKA", "CUB", "HTI", "DOM", "JAM", "TWN", "SGP", "MLT", "CYP", "CPV", "FJI", "SBR"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country that shares a land border with BRAZIL.",
+        check: (f, meta) => ["ARG", "BOL", "COL", "GUY", "PRY", "PER", "SUR", "URY", "VEN", "FRA"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country that shares a land border with CHINA.",
+        check: (f, meta) => ["RUS", "MNG", "KAZ", "KGZ", "TJK", "AFG", "PAK", "IND", "NPL", "BTN", "MMR", "LAO", "VNM", "PRK"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country that shares a land border with GERMANY.",
+        check: (f, meta) => ["FRA", "BEL", "NLD", "LUX", "CHE", "AUT", "CZE", "POL", "DNK"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country that shares a land border with FRANCE.",
+        check: (f, meta) => ["ESP", "BEL", "LUX", "DEU", "CHE", "ITA", "AND", "MCO"].includes(getCountryIso3(f))
+      },
+      {
+        prompt: "Select a country that shares a land border with RUSSIA.",
+        check: (f, meta) => ["FIN", "EST", "LVA", "BLR", "UKR", "GEO", "AZE", "KAZ", "MNG", "CHN", "PRK", "NOR"].includes(getCountryIso3(f))
+      },
+
+      // 39-40: Driving Side
+      {
+        prompt: "Select a country that drives on the LEFT side of the road.",
+        check: (f, meta) => meta.drive === "Left"
+      },
+      {
+        prompt: "Select a country that drives on the RIGHT side of the road.",
+        check: (f, meta) => meta.drive === "Right"
+      },
+
+      // 41-50: Population & Size Tiers
+      {
+        prompt: "Select a country with an estimated population OVER 100 Million.",
+        check: (f, meta) => (f.properties ? f.properties.POP_EST : 0) > 100000000
+      },
+      {
+        prompt: "Select a country with an estimated population OVER 50 Million.",
+        check: (f, meta) => (f.properties ? f.properties.POP_EST : 0) > 50000000
+      },
+      {
+        prompt: "Select a country with an estimated population OVER 20 Million.",
+        check: (f, meta) => (f.properties ? f.properties.POP_EST : 0) > 20000000
+      },
+      {
+        prompt: "Select a country with an estimated population UNDER 10 Million.",
+        check: (f, meta) => {
+          const p = f.properties ? f.properties.POP_EST : 0;
+          return p > 0 && p < 10000000;
+        }
+      },
+      {
+        prompt: "Select a country with an estimated population UNDER 5 Million.",
+        check: (f, meta) => {
+          const p = f.properties ? f.properties.POP_EST : 0;
+          return p > 0 && p < 5000000;
+        }
+      },
+      {
+        prompt: "Select a country with an estimated population UNDER 1 Million.",
+        check: (f, meta) => {
+          const p = f.properties ? f.properties.POP_EST : 0;
+          return p > 0 && p < 1000000;
+        }
+      },
+
+      // 51-65: Name Initial / Alphabetical Letter Properties
+      {
+        prompt: "Select a country whose name starts with the letter 'M' or 'S'.",
+        check: (f, meta) => ["M", "S"].includes(meta.letter)
+      },
+      {
+        prompt: "Select a country whose name starts with 'A' or 'B'.",
+        check: (f, meta) => ["A", "B"].includes(meta.letter)
+      },
+      {
+        prompt: "Select a country whose name starts with 'C' or 'D'.",
+        check: (f, meta) => ["C", "D"].includes(meta.letter)
+      },
+      {
+        prompt: "Select a country whose name starts with 'P' or 'R'.",
+        check: (f, meta) => ["P", "R"].includes(meta.letter)
+      },
+      {
+        prompt: "Select a country whose name starts with 'G' or 'H'.",
+        check: (f, meta) => ["G", "H"].includes(meta.letter)
+      },
+      {
+        prompt: "Select a country whose name starts with 'I' or 'J'.",
+        check: (f, meta) => ["I", "J"].includes(meta.letter)
+      },
+      {
+        prompt: "Select a country whose name starts with 'K' or 'L'.",
+        check: (f, meta) => ["K", "L"].includes(meta.letter)
+      },
+      {
+        prompt: "Select a country whose name starts with 'N' or 'O'.",
+        check: (f, meta) => ["N", "O"].includes(meta.letter)
+      },
+      {
+        prompt: "Select a country whose name starts with 'T' or 'U'.",
+        check: (f, meta) => ["T", "U"].includes(meta.letter)
+      },
+      {
+        prompt: "Select a country whose name starts with a VOWEL (A, E, I, O, U).",
+        check: (f, meta) => ["A", "E", "I", "O", "U"].includes(meta.letter)
+      },
+      {
+        prompt: "Select a country whose name starts with a CONSONANT.",
+        check: (f, meta) => !["A", "E", "I", "O", "U"].includes(meta.letter)
+      },
+      {
+        prompt: "Select a country whose name ends with the letter 'A'.",
+        check: (f, meta) => meta.name.toLowerCase().endsWith('a')
+      },
+      {
+        prompt: "Select a country whose name ends with the letter 'N'.",
+        check: (f, meta) => meta.name.toLowerCase().endsWith('n')
+      },
+      {
+        prompt: "Select a country whose name ends with the letter 'S'.",
+        check: (f, meta) => meta.name.toLowerCase().endsWith('s')
+      },
+      {
+        prompt: "Select a country whose name ends with the letter 'E'.",
+        check: (f, meta) => meta.name.toLowerCase().endsWith('e')
+      },
+
+      // 66-70: Name Lengths
+      {
+        prompt: "Select a country whose name is 5 letters or shorter.",
+        check: (f, meta) => meta.nameLength <= 5
+      },
+      {
+        prompt: "Select a country whose name is 6 letters long.",
+        check: (f, meta) => meta.nameLength === 6
+      },
+      {
+        prompt: "Select a country whose name is 7 letters long.",
+        check: (f, meta) => meta.nameLength === 7
+      },
+      {
+        prompt: "Select a country whose name is 10 letters or longer.",
+        check: (f, meta) => meta.nameLength >= 10
+      },
+      {
+        prompt: "Select a country whose name length is an EVEN number of letters.",
+        check: (f, meta) => meta.nameLength % 2 === 0
+      },
+      {
+        prompt: "Select a country whose name length is an ODD number of letters.",
+        check: (f, meta) => meta.nameLength % 2 !== 0
+      },
+
+      // 71-80: Capital City Properties
+      {
+        prompt: "Select a country whose official capital city starts with 'B' or 'C'.",
+        check: (f, meta) => ["B", "C"].includes(meta.capitalLetter)
+      },
+      {
+        prompt: "Select a country whose official capital city starts with 'A' or 'P'.",
+        check: (f, meta) => ["A", "P"].includes(meta.capitalLetter)
+      },
+      {
+        prompt: "Select a country whose official capital city starts with 'M' or 'S'.",
+        check: (f, meta) => ["M", "S"].includes(meta.capitalLetter)
+      },
+      {
+        prompt: "Select a country whose official capital city starts with 'L' or 'R'.",
+        check: (f, meta) => ["L", "R"].includes(meta.capitalLetter)
+      },
+      {
+        prompt: "Select a country whose official capital city starts with a VOWEL (A, E, I, O, U).",
+        check: (f, meta) => ["A", "E", "I", "O", "U"].includes(meta.capitalLetter)
+      },
+      {
+        prompt: "Select a country whose capital city name ends with the letter 'A'.",
+        check: (f, meta) => meta.capital.toLowerCase().endsWith('a')
+      },
+      {
+        prompt: "Select a country whose capital city is 6 letters or shorter.",
+        check: (f, meta) => meta.capital.length <= 6
+      },
+      {
+        prompt: "Select a country whose name and capital city start with the SAME letter.",
+        check: (f, meta) => meta.letter === meta.capitalLetter
+      },
+
+      // 81-86: Internet TLD & Word Count
+      {
+        prompt: "Select a country whose internet top-level domain ends in 'S' or 'E'.",
+        check: (f, meta) => ['s', 'e'].includes(meta.tld.slice(-1).toLowerCase())
+      },
+      {
+        prompt: "Select a country whose internet top-level domain ends in 'A' or 'O'.",
+        check: (f, meta) => ['a', 'o'].includes(meta.tld.slice(-1).toLowerCase())
+      },
+      {
+        prompt: "Select a country whose internet top-level domain starts with '.i' or '.m'.",
+        check: (f, meta) => meta.tld.startsWith('.i') || meta.tld.startsWith('.m')
+      },
+      {
+        prompt: "Select a country whose name consists of MULTIPLE WORDS (contains a space).",
+        check: (f, meta) => meta.name.includes(' ')
+      },
+      {
+        prompt: "Select a country whose name is a SINGLE WORD (no spaces).",
+        check: (f, meta) => !meta.name.includes(' ')
+      },
+      {
+        prompt: "Select a country starting with the letter 'V', 'W', 'Y', or 'Z'.",
+        check: (f, meta) => ["V", "W", "Y", "Z"].includes(meta.letter)
+      }
+    ];
 
     // Flagged Mode State Variables
     let flaggedGuessesLeft = 3;
@@ -2513,21 +2874,21 @@
     const CURATED_TRIVIA_DATABASE = {
       "USA": [
         "Which country is home to the Grand Canyon, Yellowstone, and 50 federal states?",
-        "Which nation has Washington, D.C. as its capital city?",
+        "Which nation has Washington, D.C. as its official capital city?",
         "Which country's film industry is globally centered in Hollywood, California?",
-        "Which nation uses the top-level internet domain extension '.us' and drives on the right?"
+        "Which nation uses the country-code internet domain extension '.us'?"
       ],
       "FRA": [
         "Which nation is famous for the Eiffel Tower, Louvre Museum, and Notre-Dame Cathedral?",
         "Which country's official capital city is Paris?",
         "Which European nation is famed for its Bordeaux wine regions and French Riviera?",
-        "Which country features a vertical Tricolour flag of Blue, White, and Red?"
+        "Which country features the internet domain extension '.fr' and capital Paris?"
       ],
       "JPN": [
         "Which island nation is famous for Mount Fuji, cherry blossoms, and Shinkansen bullet trains?",
         "Which country's official capital city is Tokyo?",
         "Which East Asian nation is the global birthplace of Anime, Manga, and Nintendo?",
-        "Which country drives on the left and uses the top-level internet domain '.jp'?"
+        "Which country uses the internet domain extension '.jp' and has its capital at Tokyo?"
       ],
       "DEU": [
         "Which European country is famous for its speed-limitless Autobahn and Munich Oktoberfest?",
@@ -2537,24 +2898,24 @@
       ],
       "EGY": [
         "Which country is world-renowned for the Great Pyramids of Giza and the Sphinx?",
-        "Which African nation's civilization developed along the historic River Nile?",
-        "Which country links Northeast Africa to the Middle East across the Sinai Peninsula?",
-        "Which country's capital city is Cairo?"
+        "Which African nation's ancient civilization developed along the historic River Nile with its capital at Cairo?",
+        "Which country links Northeast Africa to the Middle East across the Sinai Peninsula and has Cairo as capital?",
+        "Which country's official capital city is Cairo?"
       ],
       "ITA": [
-        "Which Mediterranean nation is shaped like a boot and home to the ancient Colosseum?",
+        "Which Mediterranean nation is shaped like a boot and home to the ancient Roman Colosseum?",
         "Which country's official capital city is Rome?",
-        "Which nation surrounds the independent microstates of San Marino and Vatican City?",
-        "Which European nation is the culinary birthplace of Pizza and Pasta?"
+        "Which nation entirely surrounds the independent microstates of San Marino and Vatican City?",
+        "Which European nation with capital Rome is the culinary birthplace of Pizza and Pasta?"
       ],
       "GBR": [
         "Which island nation is home to Big Ben, Buckingham Palace, and Stonehenge?",
         "Which country's official capital city is London?",
-        "Which kingdom comprises England, Scotland, Wales, and Northern Ireland?",
-        "Which nation uses the top-level domain '.uk' and drives on the left side of the road?"
+        "Which kingdom comprises England, Scotland, Wales, and Northern Ireland with capital London?",
+        "Which nation uses the top-level internet domain '.uk' and has its capital at London?"
       ],
       "BRA": [
-        "Which nation is home to the vast Amazon Rainforest and the iconic Christ the Redeemer statue?",
+        "Which nation is home to the vast Amazon Rainforest and the iconic Christ the Redeemer statue in Rio de Janeiro?",
         "Which South American country's official capital city is Brasilia?",
         "Which nation is famous for the Rio de Janeiro Carnival and winning 5 FIFA World Cups?",
         "Which country is the largest Portuguese-speaking nation in the world?"
@@ -2562,26 +2923,26 @@
       "AUS": [
         "Which continental nation is home to the Sydney Opera House and the Great Barrier Reef?",
         "Which country's official capital city is Canberra?",
-        "Which nation is famous for native marsupials like Kangaroos, Koalas, and Wombats?",
-        "Which nation occupies an entire continent surrounded by the Indian and Pacific Oceans?"
+        "Which nation is famous for native marsupials like Kangaroos, Koalas, and the capital Canberra?",
+        "Which nation occupies an entire continent surrounded by the Indian and Pacific Oceans with capital Canberra?"
       ],
       "CAN": [
-        "Which nation has the longest coastline in the world and uses the Maple Leaf on its flag?",
+        "Which nation has the longest coastline in the world, uses the Maple Leaf on its flag, and has Ottawa as capital?",
         "Which country's official capital city is Ottawa?",
-        "Which North American nation is famous for Ice Hockey, Niagara Falls, and Maple Syrup?",
-        "Which country spans 6 time zones between the Atlantic, Pacific, and Arctic Oceans?"
+        "Which North American nation with capital Ottawa is famous for Ice Hockey and Niagara Falls?",
+        "Which country spans 6 time zones between the Atlantic, Pacific, and Arctic Oceans with capital Ottawa?"
       ],
       "IND": [
         "Which Asian nation is home to the marble Taj Mahal monument in Agra?",
         "Which country's official capital city is New Delhi?",
-        "Which country is the most populous nation on Earth and birthplace of Yoga?",
-        "Which nation features a tricolor flag with a navy blue Ashoka Chakra wheel in the center?"
+        "Which country with capital New Delhi is the most populous nation on Earth and birthplace of Yoga?",
+        "Which nation features a tricolor flag with a navy blue Ashoka Chakra wheel and capital New Delhi?"
       ],
       "CHN": [
         "Which nation built the ancient Great Wall spanning thousands of miles across northern ridges?",
         "Which country's official capital city is Beijing?",
-        "Which East Asian nation is famous for Giant Pandas, the Forbidden City, and Terracotta Warriors?",
-        "Which country uses the top-level domain extension '.cn'?"
+        "Which East Asian nation with capital Beijing is famous for Giant Pandas and the Forbidden City?",
+        "Which country uses the top-level domain extension '.cn' and has its capital at Beijing?"
       ]
     };
 
@@ -2684,10 +3045,10 @@
       }
 
       const fallbackQuestions = [
-        `Which country's official capital city is ${meta.capital}?`,
-        `Which nation located in ${meta.continent} (${meta.subregion}) uses the internet domain extension '${meta.tld}'?`,
-        `Which country drives on the ${meta.drive} side of the road and is located in the ${meta.hemisphere} hemisphere?`,
-        `Which country features ${meta.mainColor} on its flag and has a name length of ${meta.nameLength} letters?`
+        `Which country has the official capital city of ${meta.capital}?`,
+        `Which nation in ${meta.continent} uses the country-code internet domain extension '${meta.tld}'?`,
+        `Which ${meta.subregion} nation starts with the letter '${meta.letter}' and has its capital at ${meta.capital}?`,
+        `Which country in ${meta.subregion} has a population bracket of ${meta.popTier} and uses the domain extension '${meta.tld}'?`
       ];
 
       for (let fq of fallbackQuestions) {
@@ -3480,67 +3841,34 @@
     }
 
     function generateRoundClues(meta) {
-      const usedTitles = new Set();
-
-      const tier1Pool = [
+      const allPossibleClues = [
         { title: "Driving Side", icon: "fa-car", text: `Drives on: <strong class="text-white">${meta.drive}</strong>` },
         { title: "Web Domain", icon: "fa-at", text: `Domain: <strong class="text-amber-300 font-mono">${meta.tld}</strong>` },
         { title: "Hemisphere", icon: "fa-compass", text: `Location: <strong class="text-amber-300">${meta.hemisphere}</strong>` },
-        { title: "Coastline", icon: "fa-water", text: `Territory: <strong class="text-amber-300">${meta.coast}</strong>` }
-      ];
-
-      const tier2Pool = [
+        { title: "Coastline", icon: "fa-water", text: `Territory: <strong class="text-amber-300">${meta.coast}</strong>` },
         { title: "Main Flag Color", icon: "fa-palette", text: `A Main Color: <strong class="text-amber-300 font-bold">${meta.mainColor}</strong>` },
         { title: "Population", icon: "fa-users", text: `Pop Bracket: <strong class="text-amber-300">${meta.popTier}</strong>` },
-        { title: "Name Length", icon: "fa-font", text: `Name: <strong class="text-amber-300">${meta.nameLength} Letters</strong>` }
-      ];
-
-      const tier3Pool = [
+        { title: "Name Length", icon: "fa-font", text: `Name: <strong class="text-amber-300">${meta.nameLength} Letters</strong>` },
         { title: "Subregion", icon: "fa-map-location-dot", text: `Subregion: <strong class="text-amber-300">${meta.subregion}</strong>` },
         { title: "Country Initial", icon: "fa-arrow-down-a-z", text: `Country Initial: <strong class="text-amber-400 font-extrabold">'${meta.letter}'</strong>` },
-        { title: "Main Flag Color", icon: "fa-palette", text: `A Main Color: <strong class="text-amber-300 font-bold">${meta.mainColor}</strong>` }
-      ];
-
-      const tier4Pool = [
         { title: "Continent", icon: "fa-globe", text: `Continent: <strong class="text-white font-bold">${meta.continent}</strong>` },
-        { title: "Country Initial", icon: "fa-arrow-down-a-z", text: `Country Initial: <strong class="text-amber-400 font-extrabold">'${meta.letter}'</strong>` },
-        { title: "Subregion", icon: "fa-map-location-dot", text: `Subregion: <strong class="text-amber-300">${meta.subregion}</strong>` }
+        { title: "Shape Outline", icon: "fa-draw-polygon", isSilhouette: true }
       ];
 
-      const pickUnique = (pool) => {
-        const available = pool.filter(c => !usedTitles.has(c.title));
-        if (available.length === 0) return null;
-        const chosen = available[Math.floor(Math.random() * available.length)];
-        usedTitles.add(chosen.title);
-        return chosen;
-      };
-
-      const clue1 = pickUnique(tier1Pool) || { title: "Driving Side", icon: "fa-car", text: `Drives on: <strong class="text-white">${meta.drive}</strong>` };
-      const clue2 = pickUnique(tier2Pool) || { title: "Population", icon: "fa-users", text: `Pop Bracket: <strong class="text-amber-300">${meta.popTier}</strong>` };
-      const clue3 = pickUnique(tier3Pool) || { title: "Country Initial", icon: "fa-arrow-down-a-z", text: `Country Initial: <strong class="text-amber-400 font-extrabold">'${meta.letter}'</strong>` };
-      const clue4 = pickUnique(tier4Pool) || { title: "Continent", icon: "fa-globe", text: `Continent: <strong class="text-white font-bold">${meta.continent}</strong>` };
-
-      let clue5;
-      const includeShape = Math.random() < 0.6;
-      if (includeShape && !usedTitles.has("Shape Outline")) {
-        clue5 = { title: "Shape Outline", icon: "fa-draw-polygon", isSilhouette: true };
-        usedTitles.add("Shape Outline");
-      } else {
-        const fallbackPool = [
-          { title: "Continent", icon: "fa-globe", text: `Continent: <strong class="text-white font-bold">${meta.continent}</strong>` },
-          { title: "Country Initial", icon: "fa-arrow-down-a-z", text: `Country Initial: <strong class="text-amber-400 font-extrabold">'${meta.letter}'</strong>` },
-          { title: "Subregion", icon: "fa-map-location-dot", text: `Subregion: <strong class="text-amber-300">${meta.subregion}</strong>` }
-        ];
-        clue5 = pickUnique(fallbackPool) || { title: "Shape Outline", icon: "fa-draw-polygon", isSilhouette: true };
+      // Fisher-Yates shuffle across all available clue types
+      for (let i = allPossibleClues.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allPossibleClues[i], allPossibleClues[j]] = [allPossibleClues[j], allPossibleClues[i]];
       }
 
-      return [
-        { num: 1, ...clue1, slotId: 'clue-slot-1' },
-        { num: 2, ...clue2, slotId: 'clue-slot-2' },
-        { num: 3, ...clue3, slotId: 'clue-slot-3' },
-        { num: 4, ...clue4, slotId: 'clue-slot-4' },
-        { num: 5, ...clue5, slotId: 'clue-slot-5' }
-      ];
+      // Pick top 5 unique randomized clues for the round
+      const chosen = allPossibleClues.slice(0, 5);
+
+      return chosen.map((clue, idx) => ({
+        num: idx + 1,
+        ...clue,
+        slotId: `clue-slot-${idx + 1}`
+      }));
     }
 
     function drawSilhouette(canvas, feature) {
@@ -3766,6 +4094,21 @@
           <div class="flex items-center space-x-1">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow"></span>
             <span class="font-semibold text-emerald-300">Target</span>
+          </div>
+        `;
+      } else if (gameMode === 'dontapply') {
+        legendDiv.innerHTML = `
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-pink-500 inline-block shadow"></span>
+            <span class="font-semibold text-pink-300">Valid Pick</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow"></span>
+            <span class="font-semibold text-amber-300">Selected</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
+            <span class="font-semibold text-red-300">Strike</span>
           </div>
         `;
       } else if (gameMode === 'speedstate') {
@@ -4337,6 +4680,61 @@
       `;
     }
 
+    function renderDontApplySidebar() {
+      const container = document.getElementById('sidebar-container');
+      if (!container || !dontApplyRule) return;
+
+      const strikesIcons = Array.from({ length: 5 }, (_, i) => {
+        if (i < dontApplyStrikesLeft) {
+          return `<i class="fa-solid fa-heart text-pink-400"></i>`;
+        }
+        return `<i class="fa-solid fa-heart text-slate-700"></i>`;
+      }).join(' ');
+
+      container.innerHTML = `
+        <div class="glass-card p-3 rounded-xl border border-pink-500/40 text-xs shadow-md animate-fade-in space-y-2.5 pointer-events-auto">
+          <div class="flex items-center justify-between">
+            <div class="font-bold text-pink-300 flex items-center space-x-1.5">
+              <i class="fa-solid fa-ban text-pink-400 text-sm"></i>
+              <span>Application</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-md bg-pink-500/20 text-pink-300 border border-pink-500/40 text-[10px] font-mono font-bold">
+              Round ${dontApplyRoundIndex + 1} / 5
+            </span>
+          </div>
+
+          <!-- Active Rule Prompt Card -->
+          <div class="glass-card p-2.5 rounded-lg border border-pink-500/30 bg-slate-900/80 text-slate-200 space-y-1">
+            <div class="text-[9px] uppercase font-bold text-pink-400 tracking-wider">Current Round Condition</div>
+            <div class="text-xs font-black text-white leading-relaxed">
+              "${dontApplyRule.prompt}"
+            </div>
+          </div>
+
+          <!-- Strikes Counter -->
+          <div class="flex items-center justify-between glass-card p-2 rounded-lg border border-slate-800 bg-slate-900/60">
+            <span class="text-[10px] font-bold text-slate-400">Strikes Remaining:</span>
+            <div class="flex space-x-1 text-xs">
+              ${strikesIcons}
+            </div>
+          </div>
+
+          <div class="text-[11px] text-slate-300 space-y-1">
+            ${!gameOver ? `
+              <div class="flex items-center space-x-1.5 text-amber-300 font-semibold">
+                <i class="fa-solid fa-hand-pointer animate-bounce"></i>
+                <span>Click ANY matching country & press Lock In!</span>
+              </div>
+            ` : `
+              <div class="glass-card p-2 rounded-lg border ${gameWon ? 'border-pink-500/50 bg-pink-950/40 text-pink-300' : 'border-red-500/50 bg-red-950/40 text-red-300'} text-xs font-bold text-center">
+                ${gameWon ? `Application Mastered! You completed all 5 rounds!` : `5 Strikes Reached! Game Over.`}
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
     function submitChainedGuess(e) {
       if (e) e.preventDefault();
       if (gameOver || gameMode !== 'chained' || !targetChain) return;
@@ -4491,6 +4889,18 @@
         fact: "An exceptionally well-preserved meteorite crater located in the Great Sandy Desert of Western Australia."
       }
     ];
+
+    function revealPlayAnother() {
+      const playAnotherBox = document.getElementById('play-another-container');
+      const btnPlayAnother = document.getElementById('btn-play-another');
+      if (playAnotherBox && btnPlayAnother) {
+        btnPlayAnother.style.pointerEvents = 'none';
+        playAnotherBox.style.display = 'flex';
+        playAnotherBox.classList.remove('hidden', 'scale-90', 'opacity-0');
+        playAnotherBox.classList.add('scale-100', 'opacity-100');
+        setTimeout(() => { btnPlayAnother.style.pointerEvents = 'auto'; }, 400);
+      }
+    }
 
     function startSpeedStateGame() {
       if (gameMode !== 'speedstate') return;
@@ -4682,6 +5092,19 @@
         }
 
         renderFlaggedSidebar();
+      } else if (gameMode === 'dontapply') {
+        dontApplyRoundIndex = 0;
+        dontApplyStrikesLeft = 5;
+        dontApplyWrongSet.clear();
+        dontApplySuccessSet.clear();
+        dontApplyRule = DONT_APPLY_RULES[Math.floor(Math.random() * DONT_APPLY_RULES.length)];
+
+        if (worldGlobe) {
+          worldGlobe.htmlElementsData([]);
+          worldGlobe.pointsData([]);
+        }
+
+        renderDontApplySidebar();
       } else if (gameMode === 'speedstate') {
         targetCountryFeature = null;
         if (geoData.length > 0) {
@@ -4859,7 +5282,7 @@
           const p = feat.properties || {};
           const sub = p.SUBREGION || p.CONTINENT || "World";
           const iso2 = getCountryIso2(feat);
-          const flagImgHtml = gameMode !== 'flagged'
+          const flagImgHtml = (gameMode !== 'flagged' && gameMode !== 'dontapply')
             ? `<img src="https://flagcdn.com/w40/${iso2}.png" class="w-4 h-3 object-cover rounded-xs border border-slate-700 shrink-0" onerror="this.onerror=null; this.style.display='none';">`
             : '';
           return `
@@ -4891,7 +5314,7 @@
               worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.8 }, 1200);
             }
 
-            if (!gameOver && ['guesser', 'hotcold', 'trivia', 'speedstate', 'flagged'].includes(gameMode)) {
+            if (!gameOver && ['guesser', 'hotcold', 'trivia', 'speedstate', 'flagged', 'dontapply'].includes(gameMode)) {
               selectCountryAndRotate(feat, true);
             }
           });
@@ -5109,6 +5532,13 @@
 
             if (gameMode === 'impact' || gameMode === 'chained') return 'rgba(30, 41, 59, 0.85)';
 
+            if (gameMode === 'dontapply') {
+              if (dontApplySuccessSet.has(d)) return 'rgba(236, 72, 153, 0.95)';
+              if (dontApplyWrongSet.has(d)) return 'rgba(239, 68, 68, 0.85)';
+              if (d === selectedFeature) return 'rgba(245, 158, 11, 0.95)';
+              return 'rgba(30, 41, 59, 0.85)';
+            }
+
             if (gameMode === 'flagged') {
               if (gameOver && d === targetCountryFeature) return gameWon ? 'rgba(16, 185, 129, 0.95)' : 'rgba(59, 130, 246, 0.95)';
               if (d === selectedFeature) return 'rgba(245, 158, 11, 0.95)';
@@ -5159,6 +5589,11 @@
               if (speedStateCorrectSet.has(d)) return 0.015;
               if (d === selectedFeature) return 0.025;
               if (gameOver && d === speedStateTarget) return 0.035;
+              return 0.008;
+            }
+            if (gameMode === 'dontapply') {
+              if (dontApplySuccessSet.has(d)) return 0.02;
+              if (d === selectedFeature) return 0.03;
               return 0.008;
             }
             if (gameMode === 'chained') return 0.008;
@@ -5238,303 +5673,401 @@
                   lockBox.classList.add('scale-100', 'opacity-100');
                   if (btnLock) btnLock.style.pointerEvents = 'auto';
                 }
-
-                renderImpactSidebar();
               }
-              return;
             }
           });
 
-        worldGlobe.controls().autoRotate = false;
-        worldGlobe.controls().enableZoom = true;
-        worldGlobe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 });
+        const btnLock = document.getElementById('btn-lock-guess');
+        if (btnLock) {
+          btnLock.addEventListener('click', () => {
+            if (gameOver) return;
 
-        setupImpactEdgeDrag();
-        setupSearchBar();
+            if (gameMode === 'dontapply') {
+              if (!selectedFeature || !dontApplyRule) return;
 
-        const resizeGlobe = () => {
-          if (worldGlobe && globeDiv) {
-            const dims = getDimensions();
-            if (dims.w > 0 && dims.h > 0) {
-              worldGlobe.width(dims.w);
-              worldGlobe.height(dims.h);
-            }
-          }
-        };
+              const selName = getFeatureName(selectedFeature);
+              const meta = extractCountryMeta(selectedFeature);
+              const isValid = dontApplyRule.check(selectedFeature, meta);
 
-        if (window.ResizeObserver) {
-          const ro = new ResizeObserver(() => resizeGlobe());
-          ro.observe(globeDiv);
-        }
-
-        setTimeout(resizeGlobe, 100);
-        setTimeout(resizeGlobe, 500);
-
-        const loader = document.getElementById('loader');
-        if (loader) {
-          loader.style.display = 'none';
-          loader.style.pointerEvents = 'none';
-          loader.classList.add('hidden');
-        }
-
-        startNewRound();
-      } catch(err) {
-        console.error("Failed to initialize GeoSphere globe", err);
-        const loader = document.getElementById('loader');
-        if (loader) {
-          loader.style.display = 'flex';
-          loader.innerHTML = `
-            <div class="text-red-400 font-bold">Failed to load world map data.</div>
-            <button onclick="location.reload()" class="px-4 py-2 bg-slate-800 text-white text-xs rounded-xl mt-3 border border-slate-700 hover:bg-slate-700">Retry</button>
-          `;
-        }
-      }
-
-      const btnPlayAnother = document.getElementById('btn-play-another');
-      if (btnPlayAnother) {
-        btnPlayAnother.addEventListener('click', (e) => {
-          if (e) e.stopPropagation();
-          sounds.playSelect();
-          startNewRound();
-        });
-      }
-
-      const btnLock = document.getElementById('btn-lock-guess');
-      if (btnLock) {
-        btnLock.addEventListener('click', (e) => {
-          if (e) e.stopPropagation();
-          if (gameOver) return;
-
-          const revealPlayAnother = () => {
-            const playAnotherBox = document.getElementById('play-another-container');
-            const btnPlayAnother = document.getElementById('btn-play-another');
-            if (playAnotherBox && btnPlayAnother) {
-              btnPlayAnother.style.pointerEvents = 'none';
-              playAnotherBox.style.display = 'flex';
-              playAnotherBox.style.pointerEvents = 'auto';
-              playAnotherBox.classList.remove('hidden', 'scale-90', 'opacity-0');
-              playAnotherBox.classList.add('scale-100', 'opacity-100');
-              setTimeout(() => {
-                btnPlayAnother.style.pointerEvents = 'auto';
-              }, 400);
-            }
-          };
-
-          if (gameMode === 'speedstate') {
-            if (speedStatePhase !== 'playing' || !selectedFeature || !speedStateTarget) return;
-
-            const selName = getFeatureName(selectedFeature);
-            const targetName = getFeatureName(speedStateTarget);
-            const isCorrect = (selectedFeature === speedStateTarget) || (selName.toLowerCase() === targetName.toLowerCase());
-
-            if (isCorrect) {
-              sounds.playSelect();
-              speedStateCorrectSet.add(speedStateTarget);
-
-              if (speedStateTimerInterval) clearInterval(speedStateTimerInterval);
-
-              const lockBox = document.getElementById('lock-container');
-              if (lockBox) {
-                lockBox.style.display = 'none';
-                lockBox.classList.remove('scale-100', 'opacity-100');
-                lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
-              }
-
-              if (speedStateIndex + 1 >= speedStateList.length) {
-                speedStatePhase = 'win';
-                gameOver = true;
-                gameWon = true;
+              if (isValid) {
                 sounds.playWin();
+                dontApplySuccessSet.add(selectedFeature);
+                dontApplyRoundIndex++;
+                selectedFeature = null;
 
-                if (window.confetti) confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                if (dontApplyRoundIndex >= 5) {
+                  gameOver = true;
+                  gameWon = true;
+                  if (window.confetti) confetti({ particleCount: 110, spread: 70, origin: { y: 0.6 } });
+
+                  showFeedbackToast(`<i class="fa-solid fa-trophy text-pink-400 mr-1"></i> Outstanding! You completed all 5 rounds!`, 'win');
+
+                  const winTextContainer = document.getElementById('win-text-container');
+                  if (winTextContainer) {
+                    winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-pink-300 border border-pink-500/50 shadow-2xl flex items-center space-x-2";
+                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-ban text-pink-400 mr-1"></i> Application Mastered! 5 / 5 Rounds Completed!</span>`;
+                  }
+
+                  renderDontApplySidebar();
+                  revealPlayAnother();
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                } else {
+                  showFeedbackToast(`<i class="fa-solid fa-circle-check text-pink-400 mr-1"></i> Correct! ${selName} matches! Round ${dontApplyRoundIndex + 1} starting...`, 'win');
+                  
+                  const nextRules = DONT_APPLY_RULES.filter(r => r !== dontApplyRule);
+                  dontApplyRule = nextRules[Math.floor(Math.random() * nextRules.length)];
+
+                  renderDontApplySidebar();
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                }
+              } else {
+                sounds.playWrong();
+                dontApplyWrongSet.add(selectedFeature);
+                dontApplyStrikesLeft--;
+                selectedFeature = null;
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                if (dontApplyStrikesLeft <= 0) {
+                  gameOver = true;
+                  gameWon = false;
+
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of strikes! ${selName} does not fit the rule.`, 'wrong');
+
+                  const winTextContainer = document.getElementById('win-text-container');
+                  if (winTextContainer) {
+                    winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
+                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> 5 Strikes Reached! Game Over.</span>`;
+                  }
+
+                  renderDontApplySidebar();
+                  revealPlayAnother();
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                } else {
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Strike! ${selName} does NOT apply! (${dontApplyStrikesLeft} strikes left)`, 'wrong');
+                  renderDontApplySidebar();
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                }
+              }
+              return;
+            }
+
+            if (gameMode === 'speedstate') {
+              if (speedStatePhase !== 'playing' || !selectedFeature || !speedStateTarget) return;
+
+              const selName = getFeatureName(selectedFeature);
+              const targetName = getFeatureName(speedStateTarget);
+              const isCorrect = (selectedFeature === speedStateTarget) || (selName.toLowerCase() === targetName.toLowerCase());
+
+              if (isCorrect) {
+                sounds.playSelect();
+                speedStateCorrectSet.add(speedStateTarget);
+
+                if (speedStateTimerInterval) clearInterval(speedStateTimerInterval);
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                if (speedStateIndex + 1 >= speedStateList.length) {
+                  speedStatePhase = 'win';
+                  gameOver = true;
+                  gameWon = true;
+                  sounds.playWin();
+
+                  if (window.confetti) confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+
+                  const winTextContainer = document.getElementById('win-text-container');
+                  if (winTextContainer) {
+                    winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-amber-300 border border-yellow-500/50 shadow-2xl flex items-center space-x-2";
+                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Perfect! All 10 Target Countries Found!</span>`;
+                  }
+
+                  renderSpeedStateSidebar();
+                  revealPlayAnother();
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                } else {
+                  speedStateIndex++;
+                  speedStateTarget = speedStateList[speedStateIndex];
+                  selectedFeature = null;
+
+                  speedStateTimeLimit = Math.max(4.0, Number((20.0 - speedStateIndex * 1.5).toFixed(1)));
+                  speedStateTimeRemaining = speedStateTimeLimit;
+
+                  renderSpeedStateSidebar();
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                  startSpeedStateTimer();
+                }
+                return;
+
+              } else {
+                sounds.playWrong();
+                if (speedStateTimerInterval) clearInterval(speedStateTimerInterval);
+
+                speedStatePhase = 'gameover';
+                gameOver = true;
+                gameWon = false;
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                if (worldGlobe && speedStateTarget) {
+                  const center = getFeatureCentroid(speedStateTarget);
+                  worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.5 }, 1000);
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                }
+
+                showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Wrong Country! You picked ${selName}. Target was <strong>${targetName}</strong>.`, 'wrong');
 
                 const winTextContainer = document.getElementById('win-text-container');
                 if (winTextContainer) {
-                  winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-amber-300 border border-yellow-500/50 shadow-2xl flex items-center space-x-2";
-                  winTextContainer.innerHTML = `<span><i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Perfect! All 10 Target Countries Found!</span>`;
+                  winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
+                  winTextContainer.innerHTML = `<span><i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! Score: ${speedStateCorrectSet.size} / 10</span>`;
                 }
 
                 renderSpeedStateSidebar();
                 revealPlayAnother();
-                worldGlobe.polygonsData(getPolygonsForCurrentMode());
-              } else {
-                speedStateIndex++;
-                speedStateTarget = speedStateList[speedStateIndex];
-                selectedFeature = null;
-
-                speedStateTimeLimit = Math.max(4.0, Number((20.0 - speedStateIndex * 1.5).toFixed(1)));
-                speedStateTimeRemaining = speedStateTimeLimit;
-
-                renderSpeedStateSidebar();
-                worldGlobe.polygonsData(getPolygonsForCurrentMode());
-                startSpeedStateTimer();
+                return;
               }
-              return;
-
-            } else {
-              sounds.playWrong();
-              if (speedStateTimerInterval) clearInterval(speedStateTimerInterval);
-
-              speedStatePhase = 'gameover';
-              gameOver = true;
-              gameWon = false;
-
-              const lockBox = document.getElementById('lock-container');
-              if (lockBox) {
-                lockBox.style.display = 'none';
-                lockBox.classList.remove('scale-100', 'opacity-100');
-                lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
-              }
-
-              if (worldGlobe && speedStateTarget) {
-                const center = getFeatureCentroid(speedStateTarget);
-                worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.5 }, 1000);
-                worldGlobe.polygonsData(getPolygonsForCurrentMode());
-              }
-
-              showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Wrong Country! You picked ${selName}. Target was <strong>${targetName}</strong>.`, 'wrong');
-
-              const winTextContainer = document.getElementById('win-text-container');
-              if (winTextContainer) {
-                winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
-                winTextContainer.innerHTML = `<span><i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! Score: ${speedStateCorrectSet.size} / 10</span>`;
-              }
-
-              renderSpeedStateSidebar();
-              revealPlayAnother();
-              return;
-            }
-          }
-
-          if (gameMode === 'impact') {
-            if (!impactGuessLoc || !targetMeteor) return;
-
-            gameOver = true;
-            gameWon = true;
-
-            const distKm = getDistanceKm(impactGuessLoc.lat, impactGuessLoc.lng, targetMeteor.lat, targetMeteor.lng);
-            const radDiffKm = Math.abs(impactGuessRadius - targetMeteor.radius);
-
-            const distScore = Math.max(0, 100 - (distKm / 35));
-            const maxRadMargin = Math.max(targetMeteor.radius * 2, 20);
-            const radScore = Math.max(0, 100 - (radDiffKm / maxRadMargin) * 100);
-            const overallAccuracy = Math.round(distScore * 0.65 + radScore * 0.35);
-
-            if (overallAccuracy > 70) {
-              sounds.playWin();
-              if (window.confetti) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-            } else {
-              sounds.playLockIn();
             }
 
-            if (worldGlobe) {
-              const targetAlt = Math.max(0.12, Math.min(1.2, targetMeteor.radius * 0.012 + 0.18));
-              worldGlobe.pointOfView({ lat: targetMeteor.lat, lng: targetMeteor.lng, altitude: targetAlt }, 1600);
-              worldGlobe.polygonsData(getPolygonsForCurrentMode());
-            }
+            if (gameMode === 'impact') {
+              if (!impactGuessLoc || !targetMeteor) return;
 
-            const lockBox = document.getElementById('lock-container');
-            if (lockBox) {
-              lockBox.style.display = 'none';
-              lockBox.classList.remove('scale-100', 'opacity-100');
-              lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
-            }
-
-            const winTextContainer = document.getElementById('win-text-container');
-            if (winTextContainer) {
-              winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-amber-300 border border-orange-500/50 shadow-2xl flex items-center space-x-2";
-              winTextContainer.innerHTML = `<span><i class="fa-solid fa-meteor text-orange-400 mr-1"></i> <strong>${targetMeteor.name}</strong> - ${overallAccuracy}% Accuracy (${distKm.toLocaleString()} km off)!</span>`;
-            }
-
-            renderImpactSidebar(distKm, radDiffKm, overallAccuracy);
-            revealPlayAnother();
-            return;
-          }
-
-          if (gameMode === 'flagged') {
-            if (!selectedFeature || !targetCountryFeature) return;
-
-            const selName = getFeatureName(selectedFeature);
-            const targetName = getFeatureName(targetCountryFeature);
-            const isCorrect = (selectedFeature === targetCountryFeature) || 
-              (selName !== "Unknown" && targetName !== "Unknown" && selName.toLowerCase() === targetName.toLowerCase());
-
-            const center = getFeatureCentroid(targetCountryFeature);
-
-            if (isCorrect) {
               gameOver = true;
               gameWon = true;
-              sounds.playWin();
+
+              const distKm = getDistanceKm(impactGuessLoc.lat, impactGuessLoc.lng, targetMeteor.lat, targetMeteor.lng);
+              const radDiffKm = Math.abs(impactGuessRadius - targetMeteor.radius);
+
+              const distScore = Math.max(0, 100 - (distKm / 35));
+              const maxRadMargin = Math.max(targetMeteor.radius * 2, 20);
+              const radScore = Math.max(0, 100 - (radDiffKm / maxRadMargin) * 100);
+              const overallAccuracy = Math.round(distScore * 0.65 + radScore * 0.35);
+
+              if (overallAccuracy > 70) {
+                sounds.playWin();
+                if (window.confetti) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+              } else {
+                sounds.playLockIn();
+              }
 
               if (worldGlobe) {
-                worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.5 }, 1200);
+                const targetAlt = Math.max(0.12, Math.min(1.2, targetMeteor.radius * 0.012 + 0.18));
+                worldGlobe.pointOfView({ lat: targetMeteor.lat, lng: targetMeteor.lng, altitude: targetAlt }, 1600);
                 worldGlobe.polygonsData(getPolygonsForCurrentMode());
               }
 
-              if (window.confetti) confetti({ particleCount: 110, spread: 70, origin: { y: 0.6 } });
-
-              showFeedbackToast(`<i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Correct! That flag belongs to <strong>${targetName}</strong>!`, 'win');
+              const lockBox = document.getElementById('lock-container');
+              if (lockBox) {
+                lockBox.style.display = 'none';
+                lockBox.classList.remove('scale-100', 'opacity-100');
+                lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+              }
 
               const winTextContainer = document.getElementById('win-text-container');
               if (winTextContainer) {
-                winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-emerald-400 border border-emerald-500/50 shadow-2xl flex items-center space-x-2";
-                winTextContainer.innerHTML = `<span><i class="fa-solid fa-flag text-rose-400 mr-1"></i> Correct! It's <strong class="underline font-bold">${targetName}</strong>!</span>`;
+                winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-amber-300 border border-orange-500/50 shadow-2xl flex items-center space-x-2";
+                winTextContainer.innerHTML = `<span><i class="fa-solid fa-meteor text-orange-400 mr-1"></i> <strong>${targetMeteor.name}</strong> - ${overallAccuracy}% Accuracy (${distKm.toLocaleString()} km off)!</span>`;
               }
 
-              const lockBox = document.getElementById('lock-container');
-              if (lockBox) {
-                lockBox.style.display = 'none';
-                lockBox.classList.remove('scale-100', 'opacity-100');
-                lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
-              }
-
-              renderFlaggedSidebar();
+              renderImpactSidebar(distKm, radDiffKm, overallAccuracy);
               revealPlayAnother();
               return;
+            }
 
-            } else {
-              sounds.playWrong();
-              wrongGuesses.add(selectedFeature);
-              flaggedGuesses.push(selName);
-              flaggedGuessesLeft--;
-              selectedFeature = null;
+            if (gameMode === 'flagged') {
+              if (!selectedFeature || !targetCountryFeature) return;
 
-              const lockBox = document.getElementById('lock-container');
-              if (lockBox) {
-                lockBox.style.display = 'none';
-                lockBox.classList.remove('scale-100', 'opacity-100');
-                lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
-              }
+              const selName = getFeatureName(selectedFeature);
+              const targetName = getFeatureName(targetCountryFeature);
+              const isCorrect = (selectedFeature === targetCountryFeature) || 
+                (selName !== "Unknown" && targetName !== "Unknown" && selName.toLowerCase() === targetName.toLowerCase());
 
-              if (flaggedGuessesLeft > 0) {
-                showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! That flag is not ${selName}. (${flaggedGuessesLeft} tries left)`, 'wrong');
-                renderFlaggedSidebar();
-                worldGlobe.polygonsData(getPolygonsForCurrentMode());
-              } else {
+              const center = getFeatureCentroid(targetCountryFeature);
+
+              if (isCorrect) {
                 gameOver = true;
-                gameWon = false;
+                gameWon = true;
+                sounds.playWin();
 
                 if (worldGlobe) {
                   worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.5 }, 1200);
                   worldGlobe.polygonsData(getPolygonsForCurrentMode());
                 }
 
-                showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of tries! This flag belongs to <strong>${targetName}</strong>.`, 'wrong');
+                if (window.confetti) confetti({ particleCount: 110, spread: 70, origin: { y: 0.6 } });
+
+                showFeedbackToast(`<i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Correct! That flag belongs to <strong>${targetName}</strong>!`, 'win');
 
                 const winTextContainer = document.getElementById('win-text-container');
                 if (winTextContainer) {
-                  winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
-                  winTextContainer.innerHTML = `<span><i class="fa-solid fa-flag text-rose-400 mr-1"></i> Out of tries! It was <strong class="underline font-bold">${targetName}</strong></span>`;
+                  winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-emerald-400 border border-emerald-500/50 shadow-2xl flex items-center space-x-2";
+                  winTextContainer.innerHTML = `<span><i class="fa-solid fa-flag text-rose-400 mr-1"></i> Correct! It's <strong class="underline font-bold">${targetName}</strong>!</span>`;
+                }
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
                 }
 
                 renderFlaggedSidebar();
                 revealPlayAnother();
-              }
-              return;
-            }
-          }
+                return;
 
-          if (gameMode === 'trivia') {
+              } else {
+                sounds.playWrong();
+                wrongGuesses.add(selectedFeature);
+                flaggedGuesses.push(selName);
+                flaggedGuessesLeft--;
+                selectedFeature = null;
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                if (flaggedGuessesLeft > 0) {
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! That flag is not ${selName}. (${flaggedGuessesLeft} tries left)`, 'wrong');
+                  renderFlaggedSidebar();
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                } else {
+                  gameOver = true;
+                  gameWon = false;
+
+                  if (worldGlobe) {
+                    worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.5 }, 1200);
+                    worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                  }
+
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of tries! This flag belongs to <strong>${targetName}</strong>.`, 'wrong');
+
+                  const winTextContainer = document.getElementById('win-text-container');
+                  if (winTextContainer) {
+                    winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
+                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-flag text-rose-400 mr-1"></i> Out of tries! It was <strong class="underline font-bold">${targetName}</strong></span>`;
+                  }
+
+                  renderFlaggedSidebar();
+                  revealPlayAnother();
+                }
+                return;
+              }
+            }
+
+            if (gameMode === 'trivia') {
+              if (!selectedFeature) return;
+
+              const selName = getFeatureName(selectedFeature);
+              const targetName = getFeatureName(targetCountryFeature);
+              const isCorrect = (selectedFeature === targetCountryFeature) || 
+                (selName !== "Unknown" && targetName !== "Unknown" && selName.toLowerCase() === targetName.toLowerCase());
+
+              if (isCorrect) {
+                sounds.playWin();
+                triviaScore++;
+                showFeedbackToast(`<i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Correct! ${targetName} is right! (+1 Pt)`, 'win');
+
+                triviaQuestionIndex++;
+                triviaAttemptsLeft = 2;
+                triviaWrongAttemptsThisQuestion.clear();
+                selectedFeature = null;
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                if (triviaQuestionIndex >= 4) {
+                  gameOver = true;
+                  gameWon = triviaScore > 0;
+                  
+                  const winTextContainer = document.getElementById('win-text-container');
+                  if (winTextContainer) {
+                    winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-purple-300 border border-purple-500/50 shadow-2xl flex items-center space-x-2";
+                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-brain text-purple-400 mr-1"></i> <strong>Trivia Game Finished!</strong> Score: ${triviaScore} / 4 Correct!</span>`;
+                  }
+
+                  if (window.confetti && triviaScore >= 2) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                  revealPlayAnother();
+                } else {
+                  targetCountryFeature = triviaQuestionsForRound[triviaQuestionIndex].feature;
+                  targetMeta = extractCountryMeta(targetCountryFeature);
+                  renderTriviaSidebar();
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                }
+                return;
+              } else {
+                sounds.playWrong();
+                triviaWrongAttemptsThisQuestion.add(selectedFeature);
+                triviaAttemptsLeft--;
+                selectedFeature = null;
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                if (triviaAttemptsLeft > 0) {
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! ${selName} is wrong. 1 attempt remaining!`, 'wrong');
+                  renderTriviaSidebar();
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                } else {
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of tries! The correct answer was <strong>${targetName}</strong>.`, 'wrong');
+                  
+                  triviaQuestionIndex++;
+                  triviaAttemptsLeft = 2;
+                  triviaWrongAttemptsThisQuestion.clear();
+
+                  if (triviaQuestionIndex >= 4) {
+                    gameOver = true;
+                    gameWon = triviaScore > 0;
+
+                    const winTextContainer = document.getElementById('win-text-container');
+                    if (winTextContainer) {
+                      winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-purple-300 border border-purple-500/50 shadow-2xl flex items-center space-x-2";
+                      winTextContainer.innerHTML = `<span><i class="fa-solid fa-brain text-purple-400 mr-1"></i> <strong>Trivia Game Finished!</strong> Score: ${triviaScore} / 4 Correct!</span>`;
+                    }
+
+                    revealPlayAnother();
+                  } else {
+                    targetCountryFeature = triviaQuestionsForRound[triviaQuestionIndex].feature;
+                    targetMeta = extractCountryMeta(targetCountryFeature);
+                    renderTriviaSidebar();
+                    worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                  }
+                }
+                return;
+              }
+            }
+
             if (!selectedFeature) return;
 
             const selName = getFeatureName(selectedFeature);
@@ -5543,14 +6076,30 @@
               (selName !== "Unknown" && targetName !== "Unknown" && selName.toLowerCase() === targetName.toLowerCase());
 
             if (isCorrect) {
+              gameOver = true;
+              gameWon = true;
               sounds.playWin();
-              triviaScore++;
-              showFeedbackToast(`<i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Correct! ${targetName} is right! (+1 Pt)`, 'win');
+              showFeedbackToast(`<i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Correct! ${targetName} is the mystery country!`, 'win');
 
-              triviaQuestionIndex++;
-              triviaAttemptsLeft = 2;
-              triviaWrongAttemptsThisQuestion.clear();
-              selectedFeature = null;
+              if (gameMode === 'guesser') {
+                currentClueIndex = 5;
+                renderGuesserSidebar();
+              } else {
+                hotColdGuessesCount++;
+                const selCenter = getFeatureCentroid(selectedFeature);
+                const targetCenter = getFeatureCentroid(targetCountryFeature);
+                const dist = getDistanceKm(selCenter.lat, selCenter.lng, targetCenter.lat, targetCenter.lng);
+                const tempInfo = { name: "Correct!", icon: "fa-bullseye", textColor: "text-emerald-400", borderColor: "border-emerald-500/50", rgba: "rgba(16, 185, 129, 0.95)" };
+                hotColdMap.set(selectedFeature, tempInfo);
+                hotColdHistory.unshift({ name: selName, dist, tempInfo });
+                renderHotColdSidebar();
+              }
+
+              worldGlobe.polygonsData(getPolygonsForCurrentMode());
+
+              if (window.confetti) {
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+              }
 
               const lockBox = document.getElementById('lock-container');
               if (lockBox) {
@@ -5559,203 +6108,116 @@
                 lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
               }
 
-              if (triviaQuestionIndex >= 4) {
-                gameOver = true;
-                gameWon = triviaScore > 0;
-                
-                const winTextContainer = document.getElementById('win-text-container');
-                if (winTextContainer) {
-                  winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-purple-300 border border-purple-500/50 shadow-2xl flex items-center space-x-2";
-                  winTextContainer.innerHTML = `<span><i class="fa-solid fa-brain text-purple-400 mr-1"></i> <strong>Trivia Game Finished!</strong> Score: ${triviaScore} / 4 Correct!</span>`;
+              const winTextContainer = document.getElementById('win-text-container');
+              if (winTextContainer) {
+                winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-emerald-400 border border-emerald-500/50 shadow-2xl flex items-center space-x-2";
+                winTextContainer.innerHTML = `<span><i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Correct! It's <span class="underline font-bold">${targetName}</span>!</span>`;
+              }
+
+              revealPlayAnother();
+
+            } else {
+              if (gameMode === 'guesser') {
+                sounds.playWrong();
+                wrongGuesses.add(selectedFeature);
+                selectedFeature = null;
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
                 }
 
-                if (window.confetti && triviaScore >= 2) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-                revealPlayAnother();
-              } else {
-                targetCountryFeature = triviaQuestionsForRound[triviaQuestionIndex].feature;
-                targetMeta = extractCountryMeta(targetCountryFeature);
-                renderTriviaSidebar();
-                worldGlobe.polygonsData(getPolygonsForCurrentMode());
-              }
-              return;
-            } else {
-              sounds.playWrong();
-              triviaWrongAttemptsThisQuestion.add(selectedFeature);
-              triviaAttemptsLeft--;
-              selectedFeature = null;
-
-              const lockBox = document.getElementById('lock-container');
-              if (lockBox) {
-                lockBox.style.display = 'none';
-                lockBox.classList.remove('scale-100', 'opacity-100');
-                lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
-              }
-
-              if (triviaAttemptsLeft > 0) {
-                showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! ${selName} is wrong. 1 attempt remaining!`, 'wrong');
-                renderTriviaSidebar();
-                worldGlobe.polygonsData(getPolygonsForCurrentMode());
-              } else {
-                showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of tries! The correct answer was <strong>${targetName}</strong>.`, 'wrong');
-                
-                triviaQuestionIndex++;
-                triviaAttemptsLeft = 2;
-                triviaWrongAttemptsThisQuestion.clear();
-
-                if (triviaQuestionIndex >= 4) {
+                if (currentClueIndex < 5) {
+                  currentClueIndex++;
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! ${selName} is wrong. Clue #${currentClueIndex} unlocked!`, 'wrong');
+                  renderGuesserSidebar();
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                } else {
                   gameOver = true;
-                  gameWon = triviaScore > 0;
+                  gameWon = false;
+
+                  if (worldGlobe && targetCountryFeature) {
+                    const center = getFeatureCentroid(targetCountryFeature);
+                    worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.6 }, 1200);
+                    worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                  }
 
                   const winTextContainer = document.getElementById('win-text-container');
                   if (winTextContainer) {
-                    winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-purple-300 border border-purple-500/50 shadow-2xl flex items-center space-x-2";
-                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-brain text-purple-400 mr-1"></i> <strong>Trivia Game Finished!</strong> Score: ${triviaScore} / 4 Correct!</span>`;
+                    winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
+                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of clues! It was <span class="underline font-bold">${targetName}</span></span>`;
+                  }
+
+                  revealPlayAnother();
+                }
+              } else {
+                sounds.playLockIn();
+                const selCenter = getFeatureCentroid(selectedFeature);
+                const targetCenter = getFeatureCentroid(targetCountryFeature);
+                const dist = getDistanceKm(selCenter.lat, selCenter.lng, targetCenter.lat, targetCenter.lng);
+                const tempInfo = getTemperatureInfo(dist);
+
+                hotColdMap.set(selectedFeature, tempInfo);
+                hotColdHistory.unshift({ name: selName, dist, tempInfo });
+                hotColdGuessesCount++;
+
+                selectedFeature = null;
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                if (hotColdGuessesCount >= MAX_HOTCOLD_GUESSES) {
+                  gameOver = true;
+                  gameWon = false;
+                  sounds.playWrong();
+                  renderHotColdSidebar();
+
+                  if (worldGlobe && targetCountryFeature) {
+                    const center = getFeatureCentroid(targetCountryFeature);
+                    worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.6 }, 1200);
+                    worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                  }
+
+                  const winTextContainer = document.getElementById('win-text-container');
+                  if (winTextContainer) {
+                    winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
+                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of 10 guesses! It was <span class="underline font-bold">${targetName}</span></span>`;
                   }
 
                   revealPlayAnother();
                 } else {
-                  targetCountryFeature = triviaQuestionsForRound[triviaQuestionIndex].feature;
-                  targetMeta = extractCountryMeta(targetCountryFeature);
-                  renderTriviaSidebar();
+                  const toastType = dist < 2500 ? 'hot' : (dist < 5000 ? 'info' : 'cold');
+                  showFeedbackToast(`<i class="fa-solid ${tempInfo.icon}"></i> ${tempInfo.name}! ${selName} is ${dist.toLocaleString()} km away. (${MAX_HOTCOLD_GUESSES - hotColdGuessesCount} guesses left)`, toastType);
+                  renderHotColdSidebar();
                   worldGlobe.polygonsData(getPolygonsForCurrentMode());
                 }
               }
-              return;
             }
-          }
+          });
+        }
 
-          if (!selectedFeature) return;
+        const btnPlayAnother = document.getElementById('btn-play-another');
+        if (btnPlayAnother) {
+          btnPlayAnother.addEventListener('click', () => {
+            startNewRound();
+          });
+        }
 
-          const selName = getFeatureName(selectedFeature);
-          const targetName = getFeatureName(targetCountryFeature);
-          const isCorrect = (selectedFeature === targetCountryFeature) || 
-            (selName !== "Unknown" && targetName !== "Unknown" && selName.toLowerCase() === targetName.toLowerCase());
+        const loader = document.getElementById('loader');
+        if (loader) loader.style.display = 'none';
 
-          if (isCorrect) {
-            gameOver = true;
-            gameWon = true;
-            sounds.playWin();
-            showFeedbackToast(`<i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Correct! ${targetName} is the mystery country!`, 'win');
+        setupSearchBar();
+        setupImpactEdgeDrag();
+        startNewRound();
 
-            if (gameMode === 'guesser') {
-              currentClueIndex = 5;
-              renderGuesserSidebar();
-            } else {
-              hotColdGuessesCount++;
-              const selCenter = getFeatureCentroid(selectedFeature);
-              const targetCenter = getFeatureCentroid(targetCountryFeature);
-              const dist = getDistanceKm(selCenter.lat, selCenter.lng, targetCenter.lat, targetCenter.lng);
-              const tempInfo = { name: "Correct!", icon: "fa-bullseye", textColor: "text-emerald-400", borderColor: "border-emerald-500/50", rgba: "rgba(16, 185, 129, 0.95)" };
-              hotColdMap.set(selectedFeature, tempInfo);
-              hotColdHistory.unshift({ name: selName, dist, tempInfo });
-              renderHotColdSidebar();
-            }
-
-            worldGlobe.polygonsData(getPolygonsForCurrentMode());
-
-            if (window.confetti) {
-              confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-            }
-
-            const lockBox = document.getElementById('lock-container');
-            if (lockBox) {
-              lockBox.style.display = 'none';
-              lockBox.classList.remove('scale-100', 'opacity-100');
-              lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
-            }
-
-            const winTextContainer = document.getElementById('win-text-container');
-            if (winTextContainer) {
-              winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-emerald-400 border border-emerald-500/50 shadow-2xl flex items-center space-x-2";
-              winTextContainer.innerHTML = `<span><i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Correct! It's <span class="underline font-bold">${targetName}</span>!</span>`;
-            }
-
-            revealPlayAnother();
-
-          } else {
-            if (gameMode === 'guesser') {
-              sounds.playWrong();
-              wrongGuesses.add(selectedFeature);
-              selectedFeature = null;
-
-              const lockBox = document.getElementById('lock-container');
-              if (lockBox) {
-                lockBox.style.display = 'none';
-                lockBox.classList.remove('scale-100', 'opacity-100');
-                lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
-              }
-
-              if (currentClueIndex < 5) {
-                currentClueIndex++;
-                showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! ${selName} is wrong. Clue #${currentClueIndex} unlocked!`, 'wrong');
-                renderGuesserSidebar();
-                worldGlobe.polygonsData(getPolygonsForCurrentMode());
-              } else {
-                gameOver = true;
-                gameWon = false;
-
-                if (worldGlobe && targetCountryFeature) {
-                  const center = getFeatureCentroid(targetCountryFeature);
-                  worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.6 }, 1200);
-                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
-                }
-
-                const winTextContainer = document.getElementById('win-text-container');
-                if (winTextContainer) {
-                  winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
-                  winTextContainer.innerHTML = `<span><i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of clues! It was <span class="underline font-bold">${targetName}</span></span>`;
-                }
-
-                revealPlayAnother();
-              }
-            } else {
-              sounds.playLockIn();
-              const selCenter = getFeatureCentroid(selectedFeature);
-              const targetCenter = getFeatureCentroid(targetCountryFeature);
-              const dist = getDistanceKm(selCenter.lat, selCenter.lng, targetCenter.lat, targetCenter.lng);
-              const tempInfo = getTemperatureInfo(dist);
-
-              hotColdMap.set(selectedFeature, tempInfo);
-              hotColdHistory.unshift({ name: selName, dist, tempInfo });
-              hotColdGuessesCount++;
-
-              selectedFeature = null;
-
-              const lockBox = document.getElementById('lock-container');
-              if (lockBox) {
-                lockBox.style.display = 'none';
-                lockBox.classList.remove('scale-100', 'opacity-100');
-                lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
-              }
-
-              if (hotColdGuessesCount >= MAX_HOTCOLD_GUESSES) {
-                gameOver = true;
-                gameWon = false;
-                sounds.playWrong();
-                renderHotColdSidebar();
-
-                if (worldGlobe && targetCountryFeature) {
-                  const center = getFeatureCentroid(targetCountryFeature);
-                  worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.6 }, 1200);
-                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
-                }
-
-                const winTextContainer = document.getElementById('win-text-container');
-                if (winTextContainer) {
-                  winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
-                  winTextContainer.innerHTML = `<span><i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of 10 guesses! It was <span class="underline font-bold">${targetName}</span></span>`;
-                }
-
-                revealPlayAnother();
-              } else {
-                const toastType = dist < 2500 ? 'hot' : (dist < 5000 ? 'info' : 'cold');
-                showFeedbackToast(`<i class="fa-solid ${tempInfo.icon}"></i> ${tempInfo.name}! ${selName} is ${dist.toLocaleString()} km away. (${MAX_HOTCOLD_GUESSES - hotColdGuessesCount} guesses left)`, toastType);
-                renderHotColdSidebar();
-                worldGlobe.polygonsData(getPolygonsForCurrentMode());
-              }
-            }
-          }
-        });
+      } catch (err) {
+        console.error("Globe initialization error:", err);
       }
 
       const modeBtn = document.getElementById('mode-dropdown-btn');
@@ -5768,6 +6230,7 @@
       const btnSpeedState = document.getElementById('mode-speedstate');
       const btnChained = document.getElementById('mode-chained');
       const btnFlagged = document.getElementById('mode-flagged');
+      const btnDontApply = document.getElementById('mode-dontapply');
 
       if (modeBtn && modeMenu) {
         modeBtn.addEventListener('click', (e) => {
@@ -5782,12 +6245,12 @@
         });
 
         const resetMenuStyles = () => {
-          [btnGuesser, btnHotCold, btnTrivia, btnImpact, btnSpeedState, btnChained, btnFlagged].forEach(btn => {
+          [btnGuesser, btnHotCold, btnTrivia, btnImpact, btnSpeedState, btnChained, btnFlagged, btnDontApply].forEach(btn => {
             if (btn) btn.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
           });
         };
 
-        if (btnGuesser && btnHotCold && btnTrivia && btnImpact && btnSpeedState && btnChained && btnFlagged) {
+        if (btnGuesser && btnHotCold && btnTrivia && btnImpact && btnSpeedState && btnChained && btnFlagged && btnDontApply) {
           btnGuesser.addEventListener('click', () => {
             if (gameMode === 'guesser') { modeMenu.classList.add('hidden'); return; }
             gameMode = 'guesser';
@@ -5855,6 +6318,16 @@
             if (modeBadge) modeBadge.textContent = 'Flagged';
             resetMenuStyles();
             btnFlagged.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-emerald-300 bg-emerald-950/40 mt-1";
+            modeMenu.classList.add('hidden');
+            startNewRound();
+          });
+
+          btnDontApply.addEventListener('click', () => {
+            if (gameMode === 'dontapply') { modeMenu.classList.add('hidden'); return; }
+            gameMode = 'dontapply';
+            if (modeBadge) modeBadge.textContent = "Application";
+            resetMenuStyles();
+            btnDontApply.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-pink-300 bg-pink-950/40 mt-1";
             modeMenu.classList.add('hidden');
             startNewRound();
           });
