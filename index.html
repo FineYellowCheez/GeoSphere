@@ -2234,7 +2234,7 @@
       return false;
     }
 
-    function generateChainLocations(hubs, regionalBounds, targetCount = 8000, seed = 101) {
+    function generateChainLocations(hubs, regionalBounds, targetCount = 8500, seed = 101) {
       const points = [];
       let s = seed;
       const rnd = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
@@ -2255,7 +2255,7 @@
         const r = rnd();
         let cand;
 
-        if (r < 0.65) {
+        if (r < 0.45) {
           const hub = hubs[Math.floor(rnd() * hubs.length)];
           const spread = Math.pow(rnd(), 1.8) * (0.05 + rnd() * 4.2);
           const angle = rnd() * Math.PI * 2;
@@ -2263,7 +2263,7 @@
             lat: Number(Math.max(-75, Math.min(75, hub.lat + Math.sin(angle) * spread)).toFixed(4)),
             lng: Number(Math.max(-175, Math.min(175, hub.lng + Math.cos(angle) * spread)).toFixed(4))
           };
-        } else if (r < 0.88 && regionalBounds && regionalBounds.length > 0) {
+        } else if (r < 0.90 && regionalBounds && regionalBounds.length > 0) {
           const b = regionalBounds[Math.floor(rnd() * regionalBounds.length)];
           cand = {
             lat: Number((b.minLat + rnd() * (b.maxLat - b.minLat)).toFixed(4)),
@@ -2292,14 +2292,28 @@
       return points;
     }
 
+    const REG_NA_US = { minLat: 25, maxLat: 49, minLng: -124, maxLng: -67 };
+    const REG_NA_CA = { minLat: 43, maxLat: 60, minLng: -130, maxLng: -60 };
+    const REG_NA_MX = { minLat: 15, maxLat: 32, minLng: -116, maxLng: -86 };
+    const REG_SA_BR = { minLat: -30, maxLat: -3, minLng: -60, maxLng: -35 };
+    const REG_SA_ARG_CL = { minLat: -42, maxLat: -22, minLng: -73, maxLng: -56 };
+    const REG_SA_AND = { minLat: -18, maxLat: 11, minLng: -80, maxLng: -66 };
+    const REG_EU_WEST = { minLat: 36, maxLat: 58, minLng: -10, maxLng: 16 };
+    const REG_EU_EAST = { minLat: 40, maxLat: 62, minLng: 15, maxLng: 32 };
+    const REG_EU_NORD = { minLat: 54, maxLat: 65, minLng: 5, maxLng: 28 };
+    const REG_ASIA_EAST = { minLat: 22, maxLat: 42, minLng: 100, maxLng: 142 };
+    const REG_ASIA_SE = { minLat: -8, maxLat: 20, minLng: 95, maxLng: 125 };
+    const REG_ASIA_SOUTH = { minLat: 8, maxLat: 32, minLng: 68, maxLng: 90 };
+    const REG_ME_NORTH_AFR = { minLat: 15, maxLat: 37, minLng: -10, maxLng: 55 };
+    const REG_AFR_SUB = { minLat: -34, maxLat: 12, minLng: 8, maxLng: 40 };
+    const REG_AUS_NZ = { minLat: -42, maxLat: -12, minLng: 113, maxLng: 178 };
+
     const CHAINED_DATABASE = [
       {
         name: "McDonald's",
         aliases: ["mcdonalds", "mcdonald's", "mcdonald", "mcd", "mcds"],
         seed: 101,
-        regionalBounds: [
-          { minLat: 24, maxLat: 49, minLng: -125, maxLng: -66 }
-        ],
+        regionalBounds: [REG_NA_US, REG_NA_CA, REG_NA_MX, REG_SA_BR, REG_SA_ARG_CL, REG_EU_WEST, REG_EU_EAST, REG_EU_NORD, REG_ASIA_EAST, REG_ASIA_SE, REG_ASIA_SOUTH, REG_ME_NORTH_AFR, REG_AFR_SUB, REG_AUS_NZ],
         clues: [
           "Category: Fast Food Restaurant Chain",
           "Founding Origin: California, USA (1940)",
@@ -2309,17 +2323,14 @@
           "Slogan: 'I'm lovin' it'"
         ],
         hubs: [
-          { lat: 40.758, lng: -73.985 }, { lat: 34.052, lng: -118.243 }
+          { lat: 40.758, lng: -73.985 }, { lat: 34.052, lng: -118.243 }, { lat: 51.507, lng: -0.127 }, { lat: 48.856, lng: 2.352 }, { lat: 52.52, lng: 13.405 }, { lat: 35.676, lng: 139.65 }, { lat: 39.904, lng: 116.407 }, { lat: 19.076, lng: 72.877 }, { lat: -23.55, lng: -46.633 }, { lat: -33.868, lng: 151.209 }, { lat: 25.204, lng: 55.27 }, { lat: -26.204, lng: 28.047 }
         ]
       },
       {
         name: "Starbucks",
         aliases: ["starbucks", "starbuck", "sbux"],
         seed: 202,
-        regionalBounds: [
-          { minLat: 24, maxLat: 49, minLng: -125, maxLng: -66 },
-          { minLat: 20, maxLat: 45, minLng: 100, maxLng: 145 }
-        ],
+        regionalBounds: [REG_NA_US, REG_NA_CA, REG_NA_MX, REG_SA_BR, REG_EU_WEST, REG_EU_EAST, REG_EU_NORD, REG_ASIA_EAST, REG_ASIA_SE, REG_ME_NORTH_AFR, REG_AUS_NZ, REG_SA_AND],
         clues: [
           "Category: Coffeehouse & Roastery Chain",
           "Founding Origin: Seattle, Washington, USA (1971)",
@@ -2329,17 +2340,14 @@
           "Culture: Custom names on cups and barista specialty drinks"
         ],
         hubs: [
-          { lat: 47.606, lng: -122.332 }, { lat: 40.758, lng: -73.985 }, { lat: 35.676, lng: 139.65 }
+          { lat: 47.606, lng: -122.332 }, { lat: 40.758, lng: -73.985 }, { lat: 35.676, lng: 139.65 }, { lat: 37.566, lng: 126.978 }, { lat: 31.23, lng: 121.473 }, { lat: 51.507, lng: -0.127 }, { lat: 48.856, lng: 2.352 }, { lat: 25.033, lng: 121.565 }, { lat: 13.756, lng: 100.501 }, { lat: 25.204, lng: 55.27 }
         ]
       },
       {
         name: "IKEA",
         aliases: ["ikea"],
         seed: 303,
-        regionalBounds: [
-          { minLat: 45, maxLat: 60, minLng: 5, maxLng: 25 },
-          { minLat: 25, maxLat: 50, minLng: -120, maxLng: -70 }
-        ],
+        regionalBounds: [REG_EU_NORD, REG_EU_WEST, REG_EU_EAST, REG_NA_US, REG_NA_CA, REG_ASIA_EAST, REG_ASIA_SE, REG_ME_NORTH_AFR, REG_AUS_NZ, REG_SA_BR],
         clues: [
           "Category: Ready-to-assemble Furniture Retailer",
           "Founding Origin: Älmhult, Sweden (1943)",
@@ -2349,17 +2357,14 @@
           "Catalog: Distributed millions of annual product catalogs globally"
         ],
         hubs: [
-          { lat: 56.55, lng: 14.13 }, { lat: 52.52, lng: 13.40 }, { lat: 40.75, lng: -73.98 }
+          { lat: 56.55, lng: 14.13 }, { lat: 59.329, lng: 18.068 }, { lat: 52.52, lng: 13.405 }, { lat: 51.507, lng: -0.127 }, { lat: 40.75, lng: -73.98 }, { lat: 39.904, lng: 116.407 }, { lat: 35.676, lng: 139.65 }, { lat: -33.868, lng: 151.209 }, { lat: 24.713, lng: 46.675 }
         ]
       },
       {
         name: "7-Eleven",
         aliases: ["7-eleven", "7 eleven", "7eleven", "711"],
         seed: 404,
-        regionalBounds: [
-          { minLat: 25, maxLat: 45, minLng: 125, maxLng: 145 },
-          { minLat: 25, maxLat: 48, minLng: -122, maxLng: -70 }
-        ],
+        regionalBounds: [REG_ASIA_EAST, REG_ASIA_SE, REG_NA_US, REG_NA_CA, REG_NA_MX, REG_EU_NORD, REG_AUS_NZ],
         clues: [
           "Category: Convenience Store Chain",
           "Founding Origin: Dallas, Texas, USA (1927)",
@@ -2369,7 +2374,500 @@
           "Name Origin: Renamed in 1946 to reflect extended operating hours (7 AM to 11 PM)"
         ],
         hubs: [
-          { lat: 35.676, lng: 139.65 }, { lat: 32.776, lng: -96.797 }
+          { lat: 35.676, lng: 139.65 }, { lat: 34.693, lng: 135.502 }, { lat: 25.033, lng: 121.565 }, { lat: 13.756, lng: 100.501 }, { lat: 14.599, lng: 120.984 }, { lat: 1.352, lng: 103.82 }, { lat: 32.776, lng: -96.797 }, { lat: 34.052, lng: -118.243 }, { lat: 55.676, lng: 12.568 }
+        ]
+      },
+      {
+        name: "KFC",
+        aliases: ["kfc", "kentucky fried chicken"],
+        seed: 505,
+        regionalBounds: [REG_NA_US, REG_NA_CA, REG_NA_MX, REG_SA_BR, REG_SA_AND, REG_EU_WEST, REG_EU_EAST, REG_ASIA_EAST, REG_ASIA_SE, REG_ASIA_SOUTH, REG_ME_NORTH_AFR, REG_AFR_SUB, REG_AUS_NZ],
+        clues: [
+          "Category: Fast Food Fried Chicken Chain",
+          "Founding Origin: Corbin, Kentucky, USA (1930)",
+          "Iconic Mascot: Colonel Harland Sanders in a white suit & bowtie",
+          "Secret Recipe: Famed for 11 secret herbs and spices",
+          "Global Superpower: Massive popularity across China with over 9,000 restaurants",
+          "Slogan: 'Finger Lickin' Good'"
+        ],
+        hubs: [
+          { lat: 38.252, lng: -85.758 }, { lat: 39.904, lng: 116.407 }, { lat: 31.23, lng: 121.473 }, { lat: 51.507, lng: -0.127 }, { lat: -26.204, lng: 28.047 }, { lat: 6.524, lng: 3.379 }, { lat: -1.292, lng: 36.821 }, { lat: 30.044, lng: 31.235 }, { lat: 28.613, lng: 77.209 }, { lat: 13.756, lng: 100.501 }, { lat: -6.208, lng: 106.845 }
+        ]
+      },
+      {
+        name: "Subway",
+        aliases: ["subway", "subway sandwiches"],
+        seed: 606,
+        regionalBounds: [REG_NA_US, REG_NA_CA, REG_NA_MX, REG_SA_BR, REG_SA_ARG_CL, REG_EU_WEST, REG_EU_EAST, REG_EU_NORD, REG_ASIA_EAST, REG_ASIA_SE, REG_ASIA_SOUTH, REG_ME_NORTH_AFR, REG_AFR_SUB, REG_AUS_NZ],
+        clues: [
+          "Category: Submarine Sandwich & Salad Chain",
+          "Founding Origin: Bridgeport, Connecticut, USA (1965)",
+          "Iconic Concept: Custom submarine sandwich assembly line built to order",
+          "Store Count: Once held title of world's largest restaurant chain by location count",
+          "Signature Item: Footlong subs, B.M.T., and freshly baked cookies",
+          "Slogan: 'Eat Fresh'"
+        ],
+        hubs: [
+          { lat: 41.179, lng: -73.189 }, { lat: 34.052, lng: -118.243 }, { lat: 51.507, lng: -0.127 }, { lat: -33.868, lng: 151.209 }, { lat: 19.432, lng: -99.133 }, { lat: -23.55, lng: -46.633 }, { lat: 28.613, lng: 77.209 }, { lat: 35.676, lng: 139.65 }, { lat: 52.52, lng: 13.405 }
+        ]
+      },
+      {
+        name: "Burger King",
+        aliases: ["burger king", "bk"],
+        seed: 707,
+        regionalBounds: [REG_NA_US, REG_NA_CA, REG_NA_MX, REG_SA_BR, REG_SA_ARG_CL, REG_EU_WEST, REG_EU_EAST, REG_EU_NORD, REG_ASIA_EAST, REG_ASIA_SE, REG_ME_NORTH_AFR, REG_AFR_SUB, REG_AUS_NZ],
+        clues: [
+          "Category: Fast Food Hamburger Chain",
+          "Founding Origin: Jacksonville / Miami, Florida, USA (1953)",
+          "Cooking Method: Flame-broiling beef patties over open grills",
+          "Iconic Product: The Whopper sandwich introduced in 1957",
+          "Iconic Mascot: Royalty mascot 'The King' and paper crowns for kids",
+          "Slogan: 'Have It Your Way'"
+        ],
+        hubs: [
+          { lat: 25.761, lng: -80.191 }, { lat: 52.52, lng: 13.405 }, { lat: 40.416, lng: -3.703 }, { lat: 41.008, lng: 28.978 }, { lat: -23.55, lng: -46.633 }, { lat: 19.432, lng: -99.133 }, { lat: 35.676, lng: 139.65 }, { lat: 25.204, lng: 55.27 }, { lat: -33.868, lng: 151.209 }
+        ]
+      },
+      {
+        name: "Domino's Pizza",
+        aliases: ["dominos", "domino's", "domino's pizza", "dominos pizza"],
+        seed: 808,
+        regionalBounds: [REG_NA_US, REG_NA_CA, REG_NA_MX, REG_SA_BR, REG_EU_WEST, REG_EU_EAST, REG_ASIA_EAST, REG_ASIA_SE, REG_ASIA_SOUTH, REG_ME_NORTH_AFR, REG_AUS_NZ],
+        clues: [
+          "Category: Pizza Delivery & Carryout Chain",
+          "Founding Origin: Ypsilanti, Michigan, USA (1960)",
+          "Iconic Branding: Domino tile logo with three dots representing original stores",
+          "Pioneering Tech: Famous for online Pizza Tracker and 30-minute delivery guarantee history",
+          "Global Footprint: Over 19,000 stores operating in 90+ countries",
+          "Specialty: Custom crust pizzas, wings, and cheesy bread"
+        ],
+        hubs: [
+          { lat: 42.241, lng: -83.612 }, { lat: 51.507, lng: -0.127 }, { lat: 19.076, lng: 72.877 }, { lat: 28.613, lng: 77.209 }, { lat: 35.676, lng: 139.65 }, { lat: -33.868, lng: 151.209 }, { lat: 19.432, lng: -99.133 }, { lat: 41.008, lng: 28.978 }
+        ]
+      },
+      {
+        name: "Walmart",
+        aliases: ["walmart", "wal-mart"],
+        seed: 909,
+        regionalBounds: [REG_NA_US, REG_NA_CA, REG_NA_MX, REG_SA_ARG_CL, REG_ASIA_EAST, REG_AFR_SUB],
+        clues: [
+          "Category: Multinational Retail Hypermarket Chain",
+          "Founding Origin: Rogers / Bentonville, Arkansas, USA (1962 by Sam Walton)",
+          "Revenue Status: World's largest company by revenue",
+          "Format: Massive Supercenters offering groceries, apparel, and electronics under one roof",
+          "Logo: Yellow 6-point spark logo on blue field",
+          "Slogan: 'Save Money. Live Better.'"
+        ],
+        hubs: [
+          { lat: 36.372, lng: -94.208 }, { lat: 32.776, lng: -96.797 }, { lat: 19.432, lng: -99.133 }, { lat: 43.653, lng: -79.383 }, { lat: -33.448, lng: -70.669 }, { lat: 22.543, lng: 114.057 }, { lat: -26.204, lng: 28.047 }
+        ]
+      },
+      {
+        name: "Target",
+        aliases: ["target", "target store"],
+        seed: 1010,
+        regionalBounds: [REG_NA_US, REG_AUS_NZ],
+        clues: [
+          "Category: General Merchandise & Big-Box Department Store",
+          "Founding Origin: Minneapolis, Minnesota, USA (1962)",
+          "Iconic Branding: Red & White Bullseye logo and mascot dog 'Bullseye'",
+          "Colloquial Nickname: Often playfully pronounced with French flair as 'Tar-zhay'",
+          "Store Count: Over 1,950 stores across the United States",
+          "Focus: Stylish designer collaborations, home decor, and essential retail"
+        ],
+        hubs: [
+          { lat: 44.977, lng: -93.265 }, { lat: 34.052, lng: -118.243 }, { lat: 40.758, lng: -73.985 }, { lat: -33.868, lng: 151.209 }, { lat: -37.813, lng: 144.963 }, { lat: -27.47, lng: 153.021 }
+        ]
+      },
+      {
+        name: "Costco",
+        aliases: ["costco", "costco wholesale"],
+        seed: 1111,
+        regionalBounds: [REG_NA_US, REG_NA_CA, REG_NA_MX, REG_EU_WEST, REG_EU_NORD, REG_ASIA_EAST, REG_AUS_NZ],
+        clues: [
+          "Category: Membership-only Warehouse Club Chain",
+          "Founding Origin: Seattle / Issaquah, Washington, USA (1983)",
+          "Business Model: Bulk quantity sales required via annual paid membership card",
+          "Famous In-house Brand: Kirkland Signature private label",
+          "Cult Favorite Food Court Item: Iconic $1.50 Hot Dog & Soda combo price locked since 1985",
+          "Unique Feature: Free sample stations along cavernous concrete store aisles"
+        ],
+        hubs: [
+          { lat: 47.53, lng: -122.032 }, { lat: 37.774, lng: -122.419 }, { lat: 43.653, lng: -79.383 }, { lat: 19.432, lng: -99.133 }, { lat: 51.507, lng: -0.127 }, { lat: 40.416, lng: -3.703 }, { lat: 35.676, lng: 139.65 }, { lat: 37.566, lng: 126.978 }, { lat: 25.033, lng: 121.565 }, { lat: -33.868, lng: 151.209 }
+        ]
+      },
+      {
+        name: "Aldi",
+        aliases: ["aldi", "aldi sud", "aldi nord"],
+        seed: 1212,
+        regionalBounds: [REG_EU_WEST, REG_EU_EAST, REG_EU_NORD, REG_NA_US, REG_AUS_NZ],
+        clues: [
+          "Category: Discount Supermarket Chain",
+          "Founding Origin: Essen / Mülheim, Germany (1946 by Albrecht brothers)",
+          "Name Origin: Short for 'Albrecht Diskont'",
+          "Unique System: Quarter deposit required to unlock shopping carts and pay-for-bags",
+          "Split History: Divided into ALDI Nord and ALDI Süd global territories",
+          "Famous Feature: 'Aisle of Shame' middle aisle with rotating non-grocery deals"
+        ],
+        hubs: [
+          { lat: 51.455, lng: 7.011 }, { lat: 52.52, lng: 13.405 }, { lat: 51.507, lng: -0.127 }, { lat: 48.856, lng: 2.352 }, { lat: 40.416, lng: -3.703 }, { lat: 52.229, lng: 21.012 }, { lat: 41.878, lng: -87.629 }, { lat: -37.813, lng: 144.963 }
+        ]
+      },
+      {
+        name: "Carrefour",
+        aliases: ["carrefour"],
+        seed: 1313,
+        regionalBounds: [REG_EU_WEST, REG_EU_EAST, REG_SA_BR, REG_SA_ARG_CL, REG_ME_NORTH_AFR, REG_ASIA_EAST],
+        clues: [
+          "Category: Multinational Retail Hypermarket Chain",
+          "Founding Origin: Annecy / Boulogne-Billancourt, France (1959)",
+          "Name Meaning: French word for 'Crossroads'",
+          "Pioneering Format: First retailer in Europe to open a massive hypermarket store (1963)",
+          "Logo Secret: Negative space hidden letter 'C' between red and blue arrows",
+          "Global Presence: Major retail dominance in Europe, Latin America, and North Africa"
+        ],
+        hubs: [
+          { lat: 48.832, lng: 2.242 }, { lat: 45.764, lng: 4.835 }, { lat: 40.416, lng: -3.703 }, { lat: 45.464, lng: 9.19 }, { lat: 52.229, lng: 21.012 }, { lat: 44.432, lng: 26.103 }, { lat: -23.55, lng: -46.633 }, { lat: -34.603, lng: -58.381 }, { lat: 25.204, lng: 55.27 }, { lat: 30.044, lng: 31.235 }, { lat: 25.033, lng: 121.565 }
+        ]
+      },
+      {
+        name: "Tesco",
+        aliases: ["tesco"],
+        seed: 1414,
+        regionalBounds: [REG_EU_WEST, REG_EU_EAST],
+        clues: [
+          "Category: Supermarket & General Merchandise Retailer",
+          "Founding Origin: Hackney, London, UK (1919 by Jack Cohen)",
+          "Market Dominance: Largest grocery retailer in the United Kingdom",
+          "Loyalty Scheme: Famous for 'Clubcard' member discounts",
+          "Formats: Express convenience stores, Metro, and Extra hypermarkets",
+          "Slogan: 'Every Little Helps'"
+        ],
+        hubs: [
+          { lat: 51.782, lng: -0.197 }, { lat: 51.507, lng: -0.127 }, { lat: 53.48, lng: -2.24 }, { lat: 53.349, lng: -6.26 }, { lat: 50.075, lng: 14.437 }, { lat: 48.148, lng: 17.107 }, { lat: 47.497, lng: 19.04 }
+        ]
+      },
+      {
+        name: "H&M",
+        aliases: ["h&m", "hm", "hennes & mauritz", "hennes and mauritz"],
+        seed: 1515,
+        regionalBounds: [REG_EU_NORD, REG_EU_WEST, REG_EU_EAST, REG_NA_US, REG_NA_CA, REG_NA_MX, REG_SA_BR, REG_ASIA_EAST, REG_ASIA_SE, REG_ME_NORTH_AFR, REG_AFR_SUB, REG_AUS_NZ],
+        clues: [
+          "Category: Fast Fashion Clothing Retailer",
+          "Founding Origin: Västerås, Sweden (1947 by Erling Persson)",
+          "Name Origin: Merger of 'Hennes' (Hers) and hunting store 'Mauritz Widforss'",
+          "Global Reach: Over 4,000 stores in 75+ countries worldwide",
+          "Famous Collaborations: Annual high-fashion designer collections (Karl Lagerfeld, Balmain)",
+          "Branding: Distinct red lettering monogram"
+        ],
+        hubs: [
+          { lat: 59.329, lng: 18.068 }, { lat: 52.52, lng: 13.405 }, { lat: 48.856, lng: 2.352 }, { lat: 51.507, lng: -0.127 }, { lat: 40.758, lng: -73.985 }, { lat: 35.676, lng: 139.65 }, { lat: 31.23, lng: 121.473 }, { lat: 37.566, lng: 126.978 }, { lat: 1.352, lng: 103.82 }, { lat: -33.868, lng: 151.209 }, { lat: -26.204, lng: 28.047 }
+        ]
+      },
+      {
+        name: "Zara",
+        aliases: ["zara", "inditex"],
+        seed: 1616,
+        regionalBounds: [REG_EU_WEST, REG_EU_EAST, REG_EU_NORD, REG_NA_US, REG_NA_CA, REG_NA_MX, REG_SA_BR, REG_SA_ARG_CL, REG_ASIA_EAST, REG_ASIA_SE, REG_ME_NORTH_AFR, REG_AFR_SUB, REG_AUS_NZ],
+        clues: [
+          "Category: Fast Fashion Apparel & Accessories Retailer",
+          "Founding Origin: A Coruña, Galicia, Spain (1975 by Amancio Ortega)",
+          "Parent Company: Flagship brand of the Inditex retail group",
+          "Supply Chain Speed: Renowned for designing and shipping new clothing trends to stores in under 15 days",
+          "Original Name: Originally named 'Zorba' after Zorba the Greek",
+          "Aesthetic: Sleek, monochrome high-end boutique look at accessible price points"
+        ],
+        hubs: [
+          { lat: 43.362, lng: -8.411 }, { lat: 40.416, lng: -3.703 }, { lat: 48.856, lng: 2.352 }, { lat: 51.507, lng: -0.127 }, { lat: 45.464, lng: 9.19 }, { lat: 40.758, lng: -73.985 }, { lat: 35.676, lng: 139.65 }, { lat: 31.23, lng: 121.473 }, { lat: 25.204, lng: 55.27 }, { lat: -23.55, lng: -46.633 }
+        ]
+      },
+      {
+        name: "Uniqlo",
+        aliases: ["uniqlo", "fast retailing"],
+        seed: 1717,
+        regionalBounds: [REG_ASIA_EAST, REG_ASIA_SE, REG_NA_US, REG_NA_CA, REG_EU_WEST, REG_EU_NORD, REG_AUS_NZ],
+        clues: [
+          "Category: Casual Wear Clothing Retailer",
+          "Founding Origin: Yamaguchi / Tokyo, Japan (1984 by Tadashi Yanai)",
+          "Name Origin: Portmanteau of 'Unique Clothing Warehouse'",
+          "Signature Tech Fabric: Famous for HEATTECH thermal innerwear and AIRism fabrics",
+          "Iconic Branding: Red square logo featuring English and Katakana Japanese lettering",
+          "Philosophy: LifeWear - high quality, simple, everyday essential clothing"
+        ],
+        hubs: [
+          { lat: 35.676, lng: 139.65 }, { lat: 34.693, lng: 135.502 }, { lat: 31.23, lng: 121.473 }, { lat: 39.904, lng: 116.407 }, { lat: 37.566, lng: 126.978 }, { lat: 25.033, lng: 121.565 }, { lat: 13.756, lng: 100.501 }, { lat: 1.352, lng: 103.82 }, { lat: -6.208, lng: 106.845 }, { lat: 14.599, lng: 120.984 }, { lat: 51.507, lng: -0.127 }, { lat: 40.758, lng: -73.985 }, { lat: -37.813, lng: 144.963 }
+        ]
+      },
+      {
+        name: "Sephora",
+        aliases: ["sephora"],
+        seed: 1818,
+        regionalBounds: [REG_EU_WEST, REG_EU_EAST, REG_NA_US, REG_NA_CA, REG_SA_BR, REG_ME_NORTH_AFR, REG_ASIA_EAST, REG_ASIA_SE, REG_AUS_NZ],
+        clues: [
+          "Category: Personal Care & Beauty Retailer",
+          "Founding Origin: Limoges / Paris, France (1969 by Dominique Mandonnaud)",
+          "Parent Luxury Group: Owned by luxury conglomerate LVMH since 1997",
+          "Store Experience: Open-sell concept where customers freely test cosmetics and perfume",
+          "Iconic Branding: Black-and-white striped shopping bags and flame-shaped S logo",
+          "Loyalty Program: Famous 'Beauty Insider' tier rewards"
+        ],
+        hubs: [
+          { lat: 48.856, lng: 2.352 }, { lat: 51.507, lng: -0.127 }, { lat: 40.758, lng: -73.985 }, { lat: 34.052, lng: -118.243 }, { lat: 43.653, lng: -79.383 }, { lat: -23.55, lng: -46.633 }, { lat: 25.204, lng: 55.27 }, { lat: 31.23, lng: 121.473 }, { lat: 1.352, lng: 103.82 }, { lat: -33.868, lng: 151.209 }
+        ]
+      },
+      {
+        name: "Decathlon",
+        aliases: ["decathlon"],
+        seed: 1919,
+        regionalBounds: [REG_EU_WEST, REG_EU_EAST, REG_ASIA_EAST, REG_ASIA_SE, REG_ASIA_SOUTH, REG_SA_BR, REG_SA_AND, REG_ME_NORTH_AFR],
+        clues: [
+          "Category: Sporting Goods & Athletic Retailer",
+          "Founding Origin: Lille / Villeneuve-d'Ascq, France (1976 by Michel Leclercq)",
+          "Scale: Largest sporting goods retailer in the world",
+          "Business Model: In-house passion brands for over 80 sports (Quechua, Tribord, B'Twin)",
+          "Store Layout: Interactive test areas where shoppers can try bikes, scooters, and tents",
+          "Name Origin: Named after the 10-event track & field athletic competition"
+        ],
+        hubs: [
+          { lat: 50.629, lng: 3.057 }, { lat: 48.856, lng: 2.352 }, { lat: 40.416, lng: -3.703 }, { lat: 45.464, lng: 9.19 }, { lat: 52.229, lng: 21.012 }, { lat: 31.23, lng: 121.473 }, { lat: 12.971, lng: 77.594 }, { lat: 28.613, lng: 77.209 }, { lat: 13.756, lng: 100.501 }, { lat: -23.55, lng: -46.633 }, { lat: 33.573, lng: -7.589 }
+        ]
+      },
+      {
+        name: "Lidl",
+        aliases: ["lidl"],
+        seed: 2020,
+        regionalBounds: [REG_EU_WEST, REG_EU_EAST, REG_EU_NORD, REG_NA_US],
+        clues: [
+          "Category: Discount Supermarket Chain",
+          "Founding Origin: Neckarsulm, Baden-Württemberg, Germany (1973 by Dieter Schwarz)",
+          "Global Scale: Over 12,000 stores across Europe and the United States",
+          "Branding: Blue circle with yellow backdrop and red tilted 'i' logo",
+          "Store Style: No-frills product display directly on wooden shipping pallets",
+          "Bakery Feature: Popular in-store bakery section with fresh pretzels and rolls"
+        ],
+        hubs: [
+          { lat: 49.191, lng: 9.224 }, { lat: 52.52, lng: 13.405 }, { lat: 51.507, lng: -0.127 }, { lat: 48.856, lng: 2.352 }, { lat: 40.416, lng: -3.703 }, { lat: 41.902, lng: 12.496 }, { lat: 52.229, lng: 21.012 }, { lat: 59.329, lng: 18.068 }, { lat: 37.983, lng: 23.727 }, { lat: 37.54, lng: -77.436 }
+        ]
+      },
+      {
+        name: "Apple Store",
+        aliases: ["apple store", "apple", "apple retail"],
+        seed: 2121,
+        regionalBounds: [REG_NA_US, REG_NA_CA, REG_NA_MX, REG_SA_BR, REG_EU_WEST, REG_EU_EAST, REG_EU_NORD, REG_ASIA_EAST, REG_ASIA_SE, REG_ME_NORTH_AFR, REG_AUS_NZ],
+        clues: [
+          "Category: Consumer Electronics Tech Retailer",
+          "Founding Origin: Tysons Corner, Virginia & Glendale, California, USA (2001)",
+          "Architecture: Minimalist glass facades, wooden tables, and high-tech Genius Bars",
+          "Revenue Metric: World's highest sales revenue per square foot of retail space",
+          "Flagship Landmark: Glass cube flagship store on 5th Avenue in New York City",
+          "Products: iPhone, iPad, Mac, and Apple Watch hands-on demo tables"
+        ],
+        hubs: [
+          { lat: 37.334, lng: -122.009 }, { lat: 40.763, lng: -73.972 }, { lat: 51.513, lng: -0.142 }, { lat: 48.856, lng: 2.352 }, { lat: 52.52, lng: 13.405 }, { lat: 35.676, lng: 139.65 }, { lat: 31.23, lng: 121.473 }, { lat: 37.566, lng: 126.978 }, { lat: 1.352, lng: 103.82 }, { lat: 13.756, lng: 100.501 }, { lat: 25.204, lng: 55.27 }, { lat: -33.868, lng: 151.209 }, { lat: -23.55, lng: -46.633 }
+        ]
+      },
+      {
+        name: "Hard Rock Cafe",
+        aliases: ["hard rock cafe", "hard rock"],
+        seed: 2222,
+        regionalBounds: [REG_NA_US, REG_NA_CA, REG_NA_MX, REG_SA_BR, REG_EU_WEST, REG_EU_EAST, REG_ASIA_EAST, REG_ASIA_SE, REG_ME_NORTH_AFR, REG_AUS_NZ],
+        clues: [
+          "Category: Rock 'n' Roll Themed Restaurant Chain",
+          "Founding Origin: London, UK (1971 by Isaac Tigrett & Peter Morton)",
+          "Ownership: Owned by the Seminole Tribe of Florida since 2007",
+          "Decor: Massive museum-quality collection of autographed guitars & rock memorabilia",
+          "Merchandise: Iconic city-named souvenir T-shirts and collectible enamel pins",
+          "Slogan: 'Love All - Serve All'"
+        ],
+        hubs: [
+          { lat: 51.503, lng: -0.151 }, { lat: 28.474, lng: -81.467 }, { lat: 40.758, lng: -73.985 }, { lat: 48.856, lng: 2.352 }, { lat: 52.52, lng: 13.405 }, { lat: 35.676, lng: 139.65 }, { lat: -8.409, lng: 115.188 }, { lat: 13.756, lng: 100.501 }, { lat: -22.906, lng: -43.172 }, { lat: 25.204, lng: 55.27 }, { lat: 30.044, lng: 31.235 }, { lat: -33.868, lng: 151.209 }
+        ]
+      },
+      {
+        name: "Marriott",
+        aliases: ["marriott", "marriott international", "marriott hotels"],
+        seed: 2323,
+        regionalBounds: [REG_NA_US, REG_NA_CA, REG_NA_MX, REG_SA_BR, REG_SA_ARG_CL, REG_EU_WEST, REG_EU_EAST, REG_EU_NORD, REG_ASIA_EAST, REG_ASIA_SE, REG_ASIA_SOUTH, REG_ME_NORTH_AFR, REG_AFR_SUB, REG_AUS_NZ],
+        clues: [
+          "Category: International Hotel & Hospitality Chain",
+          "Founding Origin: Washington, D.C. / Bethesda, Maryland, USA (1927 by J. Willard Marriott)",
+          "Scale: Largest hotel chain in the world by number of available rooms",
+          "Portfolio Brands: Ritz-Carlton, Sheraton, Westin, Courtyard, and W Hotels",
+          "Loyalty Program: Marriott Bonvoy",
+          "Origin Business: Started originally as an A&W root beer stand"
+        ],
+        hubs: [
+          { lat: 38.984, lng: -77.094 }, { lat: 40.758, lng: -73.985 }, { lat: 51.507, lng: -0.127 }, { lat: 48.856, lng: 2.352 }, { lat: 50.11, lng: 8.682 }, { lat: 25.204, lng: 55.27 }, { lat: 35.676, lng: 139.65 }, { lat: 31.23, lng: 121.473 }, { lat: 1.352, lng: 103.82 }, { lat: -33.868, lng: 151.209 }, { lat: -23.55, lng: -46.633 }, { lat: 30.044, lng: 31.235 }
+        ]
+      },
+      {
+        name: "Hilton",
+        aliases: ["hilton", "hilton hotels", "hilton worldwide"],
+        seed: 2424,
+        regionalBounds: [REG_NA_US, REG_NA_CA, REG_NA_MX, REG_SA_BR, REG_EU_WEST, REG_EU_EAST, REG_EU_NORD, REG_ASIA_EAST, REG_ASIA_SE, REG_ASIA_SOUTH, REG_ME_NORTH_AFR, REG_AFR_SUB, REG_AUS_NZ],
+        clues: [
+          "Category: Global Hospitality & Hotel Chain",
+          "Founding Origin: Cisco, Texas, USA (1919 by Conrad Hilton)",
+          "Historic Milestone: World's first coast-to-coast hotel chain in the United States",
+          "Portfolio Brands: Waldorf Astoria, DoubleTree, Hampton by Hilton, and Embassy Suites",
+          "Culinary Invention: Claims credit for inventing the Piña Colada cocktail in Puerto Rico (1954)",
+          "Loyalty Program: Hilton Honors"
+        ],
+        hubs: [
+          { lat: 38.918, lng: -77.225 }, { lat: 40.758, lng: -73.985 }, { lat: 51.507, lng: -0.127 }, { lat: 48.856, lng: 2.352 }, { lat: 41.902, lng: 12.496 }, { lat: 25.204, lng: 55.27 }, { lat: 35.676, lng: 139.65 }, { lat: 31.23, lng: 121.473 }, { lat: 1.352, lng: 103.82 }, { lat: -33.868, lng: 151.209 }, { lat: 19.432, lng: -99.133 }, { lat: -26.204, lng: 28.047 }
+        ]
+      },
+      {
+        name: "Dunkin'",
+        aliases: ["dunkin", "dunkin'", "dunkin donuts", "dunkin' donuts"],
+        seed: 2525,
+        regionalBounds: [REG_NA_US, REG_NA_MX, REG_SA_AND, REG_ASIA_EAST, REG_ASIA_SE, REG_ME_NORTH_AFR, REG_EU_WEST],
+        clues: [
+          "Category: Coffee & Doughnut Quick-Service Chain",
+          "Founding Origin: Quincy, Massachusetts, USA (1950 by Bill Rosenberg)",
+          "Rebranding: Dropped 'Donuts' from official brand name in 2019 to focus on beverages",
+          "Iconic Branding: Bright Pink and Orange color palette",
+          "Famous Product: Iced Coffee, Munchkins donut holes, and Boston Kreme",
+          "Slogan: 'America Runs On Dunkin''"
+        ],
+        hubs: [
+          { lat: 42.252, lng: -71.002 }, { lat: 40.758, lng: -73.985 }, { lat: 42.36, lng: -71.058 }, { lat: 25.761, lng: -80.191 }, { lat: 37.566, lng: 126.978 }, { lat: 13.756, lng: 100.501 }, { lat: 14.599, lng: 120.984 }, { lat: -6.208, lng: 106.845 }, { lat: 25.204, lng: 55.27 }, { lat: 40.416, lng: -3.703 }
+        ]
+      },
+      {
+        name: "Pizza Hut",
+        aliases: ["pizza hut", "pizzahut"],
+        seed: 2626,
+        regionalBounds: [REG_NA_US, REG_NA_CA, REG_NA_MX, REG_SA_BR, REG_EU_WEST, REG_EU_EAST, REG_ASIA_EAST, REG_ASIA_SE, REG_ASIA_SOUTH, REG_ME_NORTH_AFR, REG_AFR_SUB, REG_AUS_NZ],
+        clues: [
+          "Category: Restaurant & Pizza Chain",
+          "Founding Origin: Wichita, Kansas, USA (1958 by Dan & Frank Carney)",
+          "Architecture: Iconic red-roofed freestanding restaurant buildings",
+          "Signature Product: Original Pan Pizza baked in deep iron pans",
+          "Famous Innovation: Stuffed Crust Pizza introduced in 1995",
+          "Mascot / Logo: Classic red hat roof outline logo"
+        ],
+        hubs: [
+          { lat: 37.687, lng: -97.336 }, { lat: 33.019, lng: -96.698 }, { lat: 51.507, lng: -0.127 }, { lat: 39.904, lng: 116.407 }, { lat: 35.676, lng: 139.65 }, { lat: 13.756, lng: 100.501 }, { lat: -6.208, lng: 106.845 }, { lat: 19.076, lng: 72.877 }, { lat: 30.044, lng: 31.235 }, { lat: 25.204, lng: 55.27 }, { lat: -33.868, lng: 151.209 }
+        ]
+      },
+      {
+        name: "Shell",
+        aliases: ["shell", "royal dutch shell", "shell oil"],
+        seed: 2727,
+        regionalBounds: [REG_EU_WEST, REG_EU_EAST, REG_NA_US, REG_NA_CA, REG_SA_BR, REG_SA_ARG_CL, REG_ASIA_SE, REG_ASIA_SOUTH, REG_ME_NORTH_AFR, REG_AFR_SUB, REG_AUS_NZ],
+        clues: [
+          "Category: Gas Station & Energy Company",
+          "Founding Origin: London, UK / The Hague, Netherlands (1907)",
+          "Iconic Branding: Pecten yellow and red scallop shell logo",
+          "Business Domain: Worldwide network of petrol stations & roadside convenience shops",
+          "Motorsport Partner: Longstanding technical partnership with Scuderia Ferrari in Formula 1",
+          "Fuel Brand: Shell V-Power premium fuel"
+        ],
+        hubs: [
+          { lat: 52.07, lng: 4.3 }, { lat: 51.507, lng: -0.127 }, { lat: 29.76, lng: -95.369 }, { lat: 53.551, lng: 9.993 }, { lat: 14.599, lng: 120.984 }, { lat: 3.139, lng: 101.686 }, { lat: -34.603, lng: -58.381 }, { lat: 6.524, lng: 3.379 }, { lat: -33.868, lng: 151.209 }
+        ]
+      },
+      {
+        name: "BP",
+        aliases: ["bp", "british petroleum"],
+        seed: 2828,
+        regionalBounds: [REG_EU_WEST, REG_NA_US, REG_AUS_NZ, REG_AFR_SUB],
+        clues: [
+          "Category: Gas Station & Oil Major",
+          "Founding Origin: London, United Kingdom (1909 as Anglo-Persian Oil)",
+          "Iconic Branding: Bright Green and Yellow Helios sunburst logo",
+          "Retail Feature: Wild Bean Cafe roadside coffee and food shops",
+          "Former Name: British Petroleum",
+          "Slogan Campaign: 'Beyond Petroleum'"
+        ],
+        hubs: [
+          { lat: 51.507, lng: -0.127 }, { lat: 33.749, lng: -84.388 }, { lat: 41.878, lng: -87.629 }, { lat: 29.76, lng: -95.369 }, { lat: -33.868, lng: 151.209 }, { lat: -26.204, lng: 28.047 }, { lat: -36.848, lng: 174.763 }
+        ]
+      },
+      {
+        name: "Tim Hortons",
+        aliases: ["tim hortons", "tims", "timmy's", "timmys"],
+        seed: 2929,
+        regionalBounds: [REG_NA_CA, REG_NA_US, REG_NA_MX, REG_EU_WEST, REG_ASIA_EAST, REG_ASIA_SE, REG_ME_NORTH_AFR],
+        clues: [
+          "Category: Coffee & Bakery Fast Food Chain",
+          "Founding Origin: Hamilton, Ontario, Canada (1964 by NHL legend Tim Horton)",
+          "Cultural Icon: Deeply embedded in Canadian national identity & hockey culture",
+          "Famous Order Phrase: 'Double-Double' (coffee with two sugars and two creams)",
+          "Famous Product: Timbits bite-sized doughnut holes",
+          "Famous Contest: Annual 'Roll Up To Win' cup rim promotion"
+        ],
+        hubs: [
+          { lat: 43.255, lng: -79.871 }, { lat: 43.653, lng: -79.383 }, { lat: 45.501, lng: -73.567 }, { lat: 42.331, lng: -83.045 }, { lat: 53.48, lng: -2.24 }, { lat: 31.23, lng: 121.473 }, { lat: 25.204, lng: 55.27 }, { lat: 14.599, lng: 120.984 }, { lat: 13.756, lng: 100.501 }, { lat: 25.686, lng: -100.316 }
+        ]
+      },
+      {
+        name: "Nando's",
+        aliases: ["nandos", "nando's"],
+        seed: 3030,
+        regionalBounds: [REG_AFR_SUB, REG_EU_WEST, REG_AUS_NZ, REG_NA_US, REG_NA_CA, REG_ASIA_SE, REG_ASIA_SOUTH, REG_ME_NORTH_AFR],
+        clues: [
+          "Category: Flame-grilled Chicken Restaurant Chain",
+          "Founding Origin: Rosettenville, Johannesburg, South Africa (1987)",
+          "Heritage Inspiration: Afro-Portuguese cuisine and African Bird's Eye Chili",
+          "Signature Sauce: PERi-PERi chili marinade in varying heat levels",
+          "Iconic Mascot: Barcelos Rooster emblem",
+          "Exclusive Culture: Legendary Black Card granting free dining to celebrities"
+        ],
+        hubs: [
+          { lat: -26.204, lng: 28.047 }, { lat: -33.924, lng: 18.424 }, { lat: 51.507, lng: -0.127 }, { lat: 53.48, lng: -2.24 }, { lat: -33.868, lng: 151.209 }, { lat: -37.813, lng: 144.963 }, { lat: -36.848, lng: 174.763 }, { lat: 38.907, lng: -77.036 }, { lat: 49.282, lng: -123.12 }, { lat: 3.139, lng: 101.686 }, { lat: 1.352, lng: 103.82 }, { lat: 25.204, lng: 55.27 }, { lat: 28.613, lng: 77.209 }
+        ]
+      },
+      {
+        name: "FamilyMart",
+        aliases: ["familymart", "family mart"],
+        seed: 3131,
+        regionalBounds: [REG_ASIA_EAST, REG_ASIA_SE],
+        clues: [
+          "Category: Convenience Store Chain",
+          "Founding Origin: Sayama / Tokyo, Japan (1973)",
+          "Branding: Distinct Blue, White, and Green horizontal stripe logo",
+          "Jingle: Famous cheerful door chime played whenever customers enter the store",
+          "Famous Hot Food Item: FamiChiki crispy boneless fried chicken",
+          "Asian Scale: Over 24,000 stores operating in East and Southeast Asia"
+        ],
+        hubs: [
+          { lat: 35.676, lng: 139.65 }, { lat: 34.693, lng: 135.502 }, { lat: 25.033, lng: 121.565 }, { lat: 31.23, lng: 121.473 }, { lat: 23.129, lng: 113.264 }, { lat: 13.756, lng: 100.501 }, { lat: 3.139, lng: 101.686 }, { lat: 14.599, lng: 120.984 }, { lat: 10.823, lng: 106.629 }, { lat: -6.208, lng: 106.845 }
+        ]
+      },
+      {
+        name: "Lawson",
+        aliases: ["lawson"],
+        seed: 3232,
+        regionalBounds: [REG_ASIA_EAST, REG_ASIA_SE, REG_NA_US],
+        clues: [
+          "Category: Convenience Store Franchise Chain",
+          "Founding Origin: Cuyahoga Falls, Ohio, USA (1939) -> Evolved in Tokyo, Japan (1975)",
+          "Iconic Branding: Blue background with white milk jug logo",
+          "Culinary Reputation: Famous for high-end convenience store bakery & Karaage-kun chicken nuggets",
+          "Store Variants: Natural Lawson (organic foods) and Lawson Store 100",
+          "Dominant Market: Second largest convenience store chain in Japan"
+        ],
+        hubs: [
+          { lat: 35.676, lng: 139.65 }, { lat: 34.693, lng: 135.502 }, { lat: 31.23, lng: 121.473 }, { lat: 30.592, lng: 114.305 }, { lat: 29.563, lng: 106.553 }, { lat: 14.599, lng: 120.984 }, { lat: 13.756, lng: 100.501 }, { lat: 21.307, lng: -157.858 }
+        ]
+      },
+      {
+        name: "LEGO Store",
+        aliases: ["lego", "lego store"],
+        seed: 3333,
+        regionalBounds: [REG_EU_NORD, REG_EU_WEST, REG_NA_US, REG_NA_CA, REG_ASIA_EAST, REG_ASIA_SE, REG_AUS_NZ, REG_ME_NORTH_AFR, REG_SA_BR],
+        clues: [
+          "Category: Interlocking Plastic Toy & Merchandise Retailer",
+          "Founding Origin: Billund, Denmark (1932 by Ole Kirk Christiansen)",
+          "Name Origin: Contraction of Danish phrase 'Leg Godt' meaning 'Play Well'",
+          "Store Features: Pick-a-Brick walls, Build-a-Minifigure stations, and giant brick sculptures",
+          "Iconic Product: Precision-molded ABS plastic interlocking bricks",
+          "Logo: Bright Red square with yellow border and white text"
+        ],
+        hubs: [
+          { lat: 55.731, lng: 9.115 }, { lat: 48.137, lng: 11.576 }, { lat: 51.511, lng: -0.131 }, { lat: 40.758, lng: -73.985 }, { lat: 41.878, lng: -87.629 }, { lat: 31.23, lng: 121.473 }, { lat: 35.676, lng: 139.65 }, { lat: 1.352, lng: 103.82 }, { lat: -33.868, lng: 151.209 }, { lat: 25.204, lng: 55.27 }, { lat: -23.55, lng: -46.633 }
         ]
       }
     ];
@@ -2761,44 +3259,195 @@
       return hours > 0 ? `UTC+${hours}` : `UTC${hours}`;
     }
 
+    const COUNTRY_STATS_DATABASE = {
+      "USA": { pop: 335890000, area: 9833520, gdp: 27360000000000, coast: 19924 },
+      "CHN": { pop: 1411750000, area: 9596960, gdp: 17730000000000, coast: 14500 },
+      "IND": { pop: 1428620000, area: 3287263, gdp: 3750000000000, coast: 7516 },
+      "RUS": { pop: 144444000, area: 17098242, gdp: 2020000000000, coast: 37653 },
+      "CAN": { pop: 39560000, area: 9984670, gdp: 2140000000000, coast: 202080 },
+      "BRA": { pop: 216420000, area: 8515767, gdp: 2170000000000, coast: 7491 },
+      "JPN": { pop: 124500000, area: 377975, gdp: 4210000000000, coast: 29751 },
+      "DEU": { pop: 84400000, area: 357022, gdp: 4460000000000, coast: 2389 },
+      "GBR": { pop: 67700000, area: 242495, gdp: 3340000000000, coast: 12429 },
+      "FRA": { pop: 68000000, area: 551695, gdp: 3030000000000, coast: 4853 },
+      "ITA": { pop: 58900000, area: 301340, gdp: 2250000000000, coast: 7600 },
+      "ESP": { pop: 48100000, area: 505990, gdp: 1580000000000, coast: 4964 },
+      "KOR": { pop: 51700000, area: 100210, gdp: 1710000000000, coast: 2413 },
+      "AUS": { pop: 26500000, area: 7692024, gdp: 1690000000000, coast: 25760 },
+      "MEX": { pop: 128500000, area: 1964375, gdp: 1790000000000, coast: 9330 },
+      "IDN": { pop: 277500000, area: 1904569, gdp: 1370000000000, coast: 54716 },
+      "SAU": { pop: 36400000, area: 2149690, gdp: 1070000000000, coast: 2640 },
+      "TUR": { pop: 85300000, area: 783562, gdp: 1150000000000, coast: 7200 },
+      "NLD": { pop: 17800000, area: 41543, gdp: 1090000000000, coast: 451 },
+      "CHE": { pop: 8800000, area: 41285, gdp: 885000000000, coast: 0 },
+      "POL": { pop: 36700000, area: 312696, gdp: 810000000000, coast: 440 },
+      "TWN": { pop: 23400000, area: 36197, gdp: 760000000000, coast: 1566 },
+      "ARG": { pop: 46000000, area: 2780400, gdp: 640000000000, coast: 4989 },
+      "SWE": { pop: 10500000, area: 450295, gdp: 593000000000, coast: 3218 },
+      "BEL": { pop: 11700000, area: 30528, gdp: 630000000000, coast: 67 },
+      "IRL": { pop: 5100000, area: 70273, gdp: 545000000000, coast: 1448 },
+      "THA": { pop: 71800000, area: 513120, gdp: 515000000000, coast: 3219 },
+      "ISR": { pop: 9700000, area: 22072, gdp: 510000000000, coast: 273 },
+      "ARE": { pop: 9500000, area: 83600, gdp: 504000000000, coast: 1318 },
+      "SGP": { pop: 5900000, area: 734, gdp: 500000000000, coast: 193 },
+      "NOR": { pop: 5500000, area: 385207, gdp: 485000000000, coast: 58133 },
+      "AUT": { pop: 9100000, area: 83879, gdp: 520000000000, coast: 0 },
+      "BGD": { pop: 173000000, area: 147570, gdp: 446000000000, coast: 580 },
+      "PHL": { pop: 117300000, area: 300000, gdp: 440000000000, coast: 36289 },
+      "VNM": { pop: 98800000, area: 331212, gdp: 430000000000, coast: 3260 },
+      "MYS": { pop: 34300000, area: 330803, gdp: 415000000000, coast: 4675 },
+      "IRN": { pop: 89200000, area: 1648195, gdp: 400000000000, coast: 2440 },
+      "EGY": { pop: 112700000, area: 1002450, gdp: 395000000000, coast: 2450 },
+      "ZAF": { pop: 60400000, area: 1221037, gdp: 378000000000, coast: 2798 },
+      "NGA": { pop: 223800000, area: 923768, gdp: 375000000000, coast: 853 },
+      "COL": { pop: 52000000, area: 1141748, gdp: 363000000000, coast: 3208 },
+      "ROU": { pop: 19000000, area: 238397, gdp: 350000000000, coast: 225 },
+      "PAK": { pop: 240500000, area: 881913, gdp: 340000000000, coast: 1046 },
+      "CHL": { pop: 19600000, area: 756102, gdp: 335000000000, coast: 6435 },
+      "CZE": { pop: 10800000, area: 78867, gdp: 330000000000, coast: 0 },
+      "FIN": { pop: 5600000, area: 338424, gdp: 300000000000, coast: 1250 },
+      "PRT": { pop: 10400000, area: 92090, gdp: 275000000000, coast: 1793 },
+      "PER": { pop: 34000000, area: 1285216, gdp: 268000000000, coast: 2414 },
+      "KAZ": { pop: 20000000, area: 2724900, gdp: 260000000000, coast: 0 },
+      "IRQ": { pop: 45500000, area: 438317, gdp: 250000000000, coast: 58 },
+      "NZL": { pop: 5200000, area: 268021, gdp: 250000000000, coast: 15134 },
+      "DZA": { pop: 45600000, area: 2381741, gdp: 245000000000, coast: 998 },
+      "GRC": { pop: 10400000, area: 131957, gdp: 240000000000, coast: 13676 },
+      "QAT": { pop: 2700000, area: 11586, gdp: 235000000000, coast: 563 },
+      "HUN": { pop: 9600000, area: 93028, gdp: 210000000000, coast: 0 },
+      "UKR": { pop: 38000000, area: 603628, gdp: 175000000000, coast: 2782 },
+      "KWT": { pop: 4300000, area: 17818, gdp: 160000000000, coast: 499 },
+      "ETH": { pop: 126500000, area: 1104300, gdp: 155000000000, coast: 0 },
+      "MAR": { pop: 37800000, area: 446550, gdp: 140000000000, coast: 1835 },
+      "SVK": { pop: 5400000, area: 49035, gdp: 130000000000, coast: 0 },
+      "ECU": { pop: 18000000, area: 283561, gdp: 120000000000, coast: 2237 },
+      "DOM": { pop: 11300000, area: 48670, gdp: 120000000000, coast: 1288 },
+      "KEN": { pop: 55000000, area: 580367, gdp: 113000000000, coast: 536 },
+      "OMN": { pop: 4600000, area: 309500, gdp: 108000000000, coast: 2092 },
+      "CUB": { pop: 11000000, area: 109884, gdp: 107000000000, coast: 3735 },
+      "GTM": { pop: 18000000, area: 108889, gdp: 102000000000, coast: 400 },
+      "BGR": { pop: 6440000, area: 110994, gdp: 100000000000, coast: 354 },
+      "VEN": { pop: 28800000, area: 916445, gdp: 100000000000, coast: 2800 },
+      "AGO": { pop: 36700000, area: 1246700, gdp: 93000000000, coast: 1600 },
+      "UZB": { pop: 36000000, area: 448978, gdp: 90000000000, coast: 0 },
+      "LUX": { pop: 660000, area: 2586, gdp: 86000000000, coast: 0 },
+      "CRI": { pop: 5200000, area: 51100, gdp: 85000000000, coast: 1290 },
+      "LKA": { pop: 22000000, area: 65610, gdp: 84000000000, coast: 1340 },
+      "PAN": { pop: 4450000, area: 75417, gdp: 83000000000, coast: 2490 },
+      "HRV": { pop: 3850000, area: 56594, gdp: 80000000000, coast: 5835 },
+      "TZA": { pop: 67400000, area: 947303, gdp: 79000000000, coast: 1424 },
+      "CIV": { pop: 29000000, area: 322463, gdp: 79000000000, coast: 515 },
+      "AZE": { pop: 10140000, area: 86600, gdp: 78000000000, coast: 0 },
+      "LTU": { pop: 2860000, area: 65300, gdp: 78000000000, coast: 90 },
+      "URY": { pop: 3420000, area: 176215, gdp: 77000000000, coast: 660 },
+      "GHA": { pop: 34000000, area: 238533, gdp: 76000000000, coast: 539 },
+      "SRB": { pop: 6660000, area: 88361, gdp: 75000000000, coast: 0 },
+      "BLR": { pop: 9200000, area: 207600, gdp: 72000000000, coast: 0 },
+      "SVN": { pop: 2110000, area: 20273, gdp: 68000000000, coast: 47 },
+      "COD": { pop: 102000000, area: 2344858, gdp: 67000000000, coast: 37 },
+      "MMR": { pop: 54000000, area: 676578, gdp: 65000000000, coast: 1930 },
+      "TKM": { pop: 6400000, area: 488100, gdp: 60000000000, coast: 0 },
+      "UGA": { pop: 48500000, area: 241550, gdp: 50000000000, coast: 0 },
+      "TUN": { pop: 12400000, area: 163610, gdp: 50000000000, coast: 1148 },
+      "JOR": { pop: 11300000, area: 89342, gdp: 50000000000, coast: 26 },
+      "CMR": { pop: 27900000, area: 475442, gdp: 49000000000, coast: 402 },
+      "LBY": { pop: 6900000, area: 1759540, gdp: 48000000000, coast: 1770 },
+      "BOL": { pop: 12200000, area: 1098581, gdp: 45000000000, coast: 0 },
+      "BHR": { pop: 1500000, area: 786, gdp: 44000000000, coast: 161 },
+      "LVA": { pop: 1880000, area: 64589, gdp: 43000000000, coast: 498 },
+      "PRY": { pop: 6800000, area: 406752, gdp: 43000000000, coast: 0 },
+      "EST": { pop: 1360000, area: 45228, gdp: 41000000000, coast: 3794 },
+      "NPL": { pop: 30800000, area: 147181, gdp: 41000000000, coast: 0 },
+      "SLV": { pop: 6300000, area: 21041, gdp: 35000000000, coast: 307 },
+      "SDN": { pop: 48000000, area: 1861484, gdp: 35000000000, coast: 853 },
+      "HND": { pop: 10600000, area: 112492, gdp: 34000000000, coast: 820 },
+      "ZWE": { pop: 16300000, area: 390757, gdp: 32000000000, coast: 0 },
+      "KHM": { pop: 16900000, area: 181035, gdp: 32000000000, coast: 443 },
+      "CYP": { pop: 1250000, area: 9251, gdp: 32000000000, coast: 648 },
+      "ISL": { pop: 388000, area: 103000, gdp: 31000000000, coast: 4970 },
+      "PNG": { pop: 10100000, area: 462840, gdp: 31000000000, coast: 5152 },
+      "SEN": { pop: 17300000, area: 196722, gdp: 31000000000, coast: 531 },
+      "GEO": { pop: 3700000, area: 69700, gdp: 30000000000, coast: 310 },
+      "ZMB": { pop: 20000000, area: 752618, gdp: 29000000000, coast: 0 },
+      "BIH": { pop: 3200000, area: 51197, gdp: 27000000000, coast: 20 },
+      "ARM": { pop: 2780000, area: 29743, gdp: 24000000000, coast: 0 },
+      "ALB": { pop: 2770000, area: 28748, gdp: 23000000000, coast: 362 },
+      "GIN": { pop: 13900000, area: 245857, gdp: 23000000000, coast: 320 },
+      "GAB": { pop: 2380000, area: 267667, gdp: 21000000000, coast: 885 },
+      "MOZ": { pop: 33900000, area: 801590, gdp: 21000000000, coast: 2470 },
+      "YEM": { pop: 33700000, area: 527968, gdp: 21000000000, coast: 1906 },
+      "MLI": { pop: 23200000, area: 1240192, gdp: 21000000000, coast: 0 },
+      "BEN": { pop: 13300000, area: 114763, gdp: 20000000000, coast: 121 },
+      "BFA": { pop: 22600000, area: 274200, gdp: 20000000000, coast: 0 },
+      "MLT": { pop: 530000, area: 316, gdp: 20000000000, coast: 196 },
+      "LBN": { pop: 5300000, area: 10452, gdp: 20000000000, coast: 225 },
+      "MNG": { pop: 3450000, area: 1564116, gdp: 20000000000, coast: 0 },
+      "HTI": { pop: 11700000, area: 27750, gdp: 20000000000, coast: 1771 },
+      "BWA": { pop: 2600000, area: 581730, gdp: 20000000000, coast: 0 },
+      "JAM": { pop: 2800000, area: 10991, gdp: 19000000000, coast: 1022 },
+      "NER": { pop: 26200000, area: 1267000, gdp: 17000000000, coast: 0 },
+      "NIC": { pop: 7000000, area: 130373, gdp: 17000000000, coast: 910 },
+      "MDG": { pop: 29600000, area: 587041, gdp: 16000000000, coast: 4828 },
+      "MDA": { pop: 2500000, area: 33846, gdp: 16000000000, coast: 0 },
+      "PRK": { pop: 26000000, area: 120538, gdp: 16000000000, coast: 2495 },
+      "MKD": { pop: 1830000, area: 25713, gdp: 15000000000, coast: 0 },
+      "LAO": { pop: 7500000, area: 236800, gdp: 15000000000, coast: 0 },
+      "COG": { pop: 6100000, area: 342000, gdp: 15000000000, coast: 169 },
+      "AFG": { pop: 41100000, area: 652230, gdp: 14000000000, coast: 0 },
+      "RWA": { pop: 13800000, area: 26338, gdp: 14000000000, coast: 0 },
+      "NAM": { pop: 2600000, area: 825615, gdp: 13000000000, coast: 1572 },
+      "MWI": { pop: 20400000, area: 118484, gdp: 13000000000, coast: 0 },
+      "TCD": { pop: 17700000, area: 1284000, gdp: 13000000000, coast: 0 },
+      "SYR": { pop: 22000000, area: 185180, gdp: 12000000000, coast: 193 },
+      "KGZ": { pop: 7000000, area: 199951, gdp: 12000000000, coast: 0 },
+      "TJK": { pop: 10000000, area: 143100, gdp: 12000000000, coast: 0 },
+      "SOM": { pop: 17600000, area: 637657, gdp: 11000000000, coast: 3025 },
+      "TGO": { pop: 8800000, area: 56785, gdp: 9000000000, coast: 56 },
+      "MNE": { pop: 620000, area: 13812, gdp: 7000000000, coast: 293 },
+      "FJI": { pop: 930000, area: 18274, gdp: 5500000000, coast: 1129 },
+      "LBR": { pop: 5300000, area: 111369, gdp: 4300000000, coast: 579 },
+      "SLE": { pop: 8600000, area: 71740, gdp: 4000000000, coast: 402 },
+      "BDI": { pop: 12800000, area: 27834, gdp: 3500000000, coast: 0 },
+      "CAF": { pop: 5500000, area: 622984, gdp: 2600000000, coast: 0 },
+      "ERI": { pop: 3600000, area: 117600, gdp: 2600000000, coast: 2234 }
+    };
+
     function getCountryStatValue(feature, statKey) {
       if (!feature || !feature.properties) return 0;
       const p = feature.properties;
       const iso3 = getCountryIso3(feature);
-      const cName = getFeatureName(feature);
-      
-      if (statKey === 'area') {
-        if (p.AREA_SQKM && p.AREA_SQKM > 0) return p.AREA_SQKM;
-        if (p.LABEL_X !== undefined && feature._bbox) {
-          const wDeg = Math.abs(feature._bbox[2] - feature._bbox[0]);
-          const hDeg = Math.abs(feature._bbox[3] - feature._bbox[1]);
-          const approxSqKm = Math.round(wDeg * 111 * hDeg * 111 * 0.45);
-          return Math.max(500, approxSqKm);
-        }
-        return 50000;
+
+      if (COUNTRY_STATS_DATABASE[iso3] && COUNTRY_STATS_DATABASE[iso3][statKey] !== undefined) {
+        return COUNTRY_STATS_DATABASE[iso3][statKey];
       }
 
       if (statKey === 'pop') {
         const pop = p.POP_EST || p.pop_est || p.POP2020;
         if (pop && pop > 1000) return pop;
-        const charSum = cName.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
-        return (charSum * 125000) % 80000000 + 1500000;
+        return 5000000;
+      }
+
+      if (statKey === 'area') {
+        if (p.AREA_SQKM && p.AREA_SQKM > 0) return p.AREA_SQKM;
+        if (feature._bbox) {
+          const wDeg = Math.abs(feature._bbox[2] - feature._bbox[0]);
+          const hDeg = Math.abs(feature._bbox[3] - feature._bbox[1]);
+          return Math.max(500, Math.round(wDeg * 111 * hDeg * 111 * 0.45));
+        }
+        return 50000;
       }
 
       if (statKey === 'gdp') {
         let gdp = p.GDP_MD_EST || p.GDP_MD || p.gdp_md;
         if (gdp && gdp > 0) return gdp * 1000000;
         const pop = getCountryStatValue(feature, 'pop');
-        const charSum = cName.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
-        const perCapita = 2000 + (charSum * 450) % 45000;
-        return pop * perCapita;
+        return pop * 10000;
       }
 
       if (statKey === 'coast') {
         const isLandlocked = LANDLOCKED_ISO.has(iso3.toUpperCase());
         if (isLandlocked) return 0;
-        const charSum = cName.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
-        return (charSum * 85) % 18000 + 350;
+        return 1200;
       }
 
       return 0;
@@ -2807,7 +3456,7 @@
     const STAT_TYPES = [
       { key: 'pop', name: 'Population', unit: 'people', icon: 'fa-users', format: (v) => v.toLocaleString() },
       { key: 'area', name: 'Land Area', unit: 'sq km', icon: 'fa-map-location-dot', format: (v) => `${v.toLocaleString()} km²` },
-      { key: 'gdp', name: 'Nominal GDP', unit: 'USD', icon: 'fa-sack-dollar', format: (v) => `$${(v / 1e9).toFixed(1)} Billion` },
+      { key: 'gdp', name: 'Nominal GDP', unit: 'USD', icon: 'fa-sack-dollar', format: (v) => v >= 1e12 ? `$${(v / 1e12).toFixed(2)} Trillion` : (v >= 1e9 ? `$${(v / 1e9).toFixed(1)} Billion` : `$${(v / 1e6).toFixed(0)} Million`) },
       { key: 'coast', name: 'Coastline Length', unit: 'km', icon: 'fa-water', format: (v) => `${v.toLocaleString()} km` }
     ];
 
@@ -4480,7 +5129,31 @@
       let valA = getCountryStatValue(countryA, statObj.key);
       let valB = getCountryStatValue(countryB, statObj.key);
 
-      if (valA === valB) valB = Math.round(valA * 1.15) + 10;
+      if (statObj.key === 'coast' && valA === 0 && valB === 0) {
+        let attempts = 0;
+        while (valA === 0 && valB === 0 && attempts < 20) {
+          attempts++;
+          countryA = geoData[Math.floor(Math.random() * geoData.length)];
+          countryB = geoData[Math.floor(Math.random() * geoData.length)];
+          while (countryB === countryA) {
+            countryB = geoData[Math.floor(Math.random() * geoData.length)];
+          }
+          valA = getCountryStatValue(countryA, statObj.key);
+          valB = getCountryStatValue(countryB, statObj.key);
+        }
+      }
+
+      if (valA === valB) {
+        let attempts = 0;
+        while (valA === valB && attempts < 20) {
+          attempts++;
+          countryB = geoData[Math.floor(Math.random() * geoData.length)];
+          if (countryB !== countryA) {
+            valB = getCountryStatValue(countryB, statObj.key);
+          }
+        }
+        if (valA === valB) valB = valA + 100;
+      }
 
       higherLowerCountryA = countryA;
       higherLowerCountryB = countryB;
@@ -4948,24 +5621,28 @@
       if (gameMode === 'chained') {
         if (!remainingChainIndices || remainingChainIndices.length === 0) {
           remainingChainIndices = CHAINED_DATABASE.map((_, i) => i);
+          // Fisher-Yates shuffle for truly randomized, non-repeating order
+          for (let i = remainingChainIndices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [remainingChainIndices[i], remainingChainIndices[j]] = [remainingChainIndices[j], remainingChainIndices[i]];
+          }
         }
-        const randPos = Math.floor(Math.random() * remainingChainIndices.length);
-        const chainIdx = remainingChainIndices.splice(randPos, 1)[0];
+        const chainIdx = remainingChainIndices.pop();
         targetChain = CHAINED_DATABASE[chainIdx];
         chainedGuessesLeft = 6;
         chainedGuesses = [];
         chainedClueIndex = 1;
 
         if (targetChain) {
-          const points = generateChainLocations(targetChain.hubs, targetChain.regionalBounds, 350, targetChain.seed || 101);
+          const points = generateChainLocations(targetChain.hubs, targetChain.regionalBounds, 8500, targetChain.seed || 101);
           if (worldGlobe) {
             worldGlobe
               .pointsData(points)
               .pointLat('lat')
               .pointLng('lng')
               .pointColor(() => '#ef4444')
-              .pointRadius(0.35)
-              .pointAltitude(0.015);
+              .pointRadius(0.18)
+              .pointAltitude(0.012);
 
             if (targetChain.hubs && targetChain.hubs.length > 0) {
               const mainHub = targetChain.hubs[0];
