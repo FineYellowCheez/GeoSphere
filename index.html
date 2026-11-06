@@ -2511,7 +2511,7 @@
     }
 
     function selectCountryAndRotate(feature, forceZoom = false) {
-      if (gameOver || gameMode === 'impact' || gameMode === 'chained') return;
+      if (gameOver || ['impact', 'chained', 'infection', 'timezoner', 'higherlower'].includes(gameMode)) return;
       if (!feature || (feature.properties && feature.properties.isCircle)) return;
       sounds.playSelect();
       selectedFeature = feature;
@@ -5580,6 +5580,8 @@
               return;
             }
 
+            if (['chained', 'infection', 'timezoner', 'higherlower'].includes(gameMode)) return;
+
             if (feature) selectCountryAndRotate(feature, false);
           })
           .onGlobeClick((coords) => {
@@ -5608,6 +5610,7 @@
         if (btnLock) {
           btnLock.addEventListener('click', () => {
             if (gameOver) return;
+            if (['chained', 'infection', 'timezoner', 'higherlower'].includes(gameMode)) return;
 
             if (gameMode === 'countrylink') {
               if (!selectedFeature || !countryLinkCurrentTip) return;
@@ -6511,7 +6514,7 @@
               if (gameMode === 'guesser') {
                 currentClueIndex = 5;
                 renderGuesserSidebar();
-              } else {
+              } else if (gameMode === 'hotcold') {
                 hotColdGuessesCount++;
                 const selCenter = getFeatureCentroid(selectedFeature);
                 const targetCenter = getFeatureCentroid(targetCountryFeature);
@@ -6579,7 +6582,7 @@
 
                   revealPlayAnother();
                 }
-              } else {
+              } else if (gameMode === 'hotcold') {
                 sounds.playLockIn();
                 const selCenter = getFeatureCentroid(selectedFeature);
                 const targetCenter = getFeatureCentroid(targetCountryFeature);
