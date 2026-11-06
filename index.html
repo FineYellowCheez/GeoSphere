@@ -212,6 +212,34 @@
                 <div class="text-[10px] font-normal text-slate-400">Guess country origin of 300+ foods & desserts</div>
               </div>
             </button>
+            <button id="mode-payout" class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-emerald-300 mt-1">
+              <i class="fa-solid fa-money-bill-wave text-emerald-400 text-sm"></i>
+              <div>
+                <div>Payout</div>
+                <div class="text-[10px] font-normal text-slate-400">Match currency to its main user country</div>
+              </div>
+            </button>
+            <button id="mode-languages" class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-sky-300 mt-1">
+              <i class="fa-solid fa-language text-sky-400 text-sm"></i>
+              <div>
+                <div>Languages</div>
+                <div class="text-[10px] font-normal text-slate-400">Match language to its main speaker country</div>
+              </div>
+            </button>
+            <button id="mode-empires" class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-amber-300 mt-1">
+              <i class="fa-solid fa-crown text-amber-400 text-sm"></i>
+              <div>
+                <div>Ancient Empires</div>
+                <div class="text-[10px] font-normal text-slate-400">Match 70 historical empires to modern territory</div>
+              </div>
+            </button>
+            <button id="mode-infection" class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-emerald-300 mt-1">
+              <i class="fa-solid fa-biohazard text-emerald-400 text-sm"></i>
+              <div>
+                <div>Infection</div>
+                <div class="text-[10px] font-normal text-slate-400">Name mystery disease from infected countries</div>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -353,7 +381,1316 @@
     let redCascadeInterval = null;
     let gameOver = false;
     let gameWon = false;
-    let gameMode = 'guesser'; // 'guesser', 'hotcold', 'trivia', 'impact', 'speedstate', 'chained', 'flagged', 'dontapply', 'landmarker', 'countrylink', 'timezoner'
+    let gameMode = 'guesser'; // 'guesser', 'hotcold', 'trivia', 'impact', 'speedstate', 'chained', 'flagged', 'dontapply', 'landmarker', 'countrylink', 'timezoner', 'payout', 'languages', 'empires', 'infection'
+
+    // Ancient Empires Mode State Variables
+    let empiresGuessesLeft = 3;
+    let empiresGuesses = [];
+    let targetEmpire = null;
+    let isEmpiresHintRevealed = false;
+
+    function toggleEmpiresHint() {
+      isEmpiresHintRevealed = !isEmpiresHintRevealed;
+      renderEmpiresSidebar();
+    }
+    window.toggleEmpiresHint = toggleEmpiresHint;
+
+    const EMPIRES_DATABASE = [
+      { name: "Ottoman Empire", era: "1299 – 1922 CE", countries: ["TUR", "GRC", "BGR", "ROU", "SRB", "EGY", "SYR", "IRQ", "JOR", "ISR", "LBN", "SAU", "MKD", "ALB", "BIH"], info: "Transcontinental imperial realm that controlled much of Southeast Europe, Western Asia, and North Africa." },
+      { name: "Safavid Empire", era: "1501 – 1736 CE", countries: ["IRN", "IRQ", "AZE", "AFG", "TKM", "ARM"], info: "Major ruling dynasty that established Twelver Shi'ism as official state religion across Greater Iran." },
+      { name: "Aztec Empire", era: "1428 – 1521 CE", countries: ["MEX"], info: "Mesoamerican triple alliance centered in the Valley of Mexico renowned for monumental temple pyramids." },
+      { name: "Inca Empire", era: "1438 – 1533 CE", countries: ["PER", "ECU", "BOL", "CHL", "ARG", "COL"], info: "Largest empire in pre-Columbian America spanning the high Andean mountain system." },
+      { name: "Maya Civilization", era: "2000 BCE – 1697 CE", countries: ["MEX", "GTM", "HND", "SLV", "BLZ"], info: "Mesoamerican civilization famed for fully developed written script, art, and astronomical calendar systems." },
+      { name: "Roman Empire", era: "27 BCE – 476 CE", countries: ["ITA", "GRC", "FRA", "ESP", "GBR", "EGY", "TUR", "DZA", "MAR", "TUN", "SYR", "ISR", "LBN", "JOR"], info: "Classical Mediterranean empire centered on Rome governing Europe, North Africa, and the Near East." },
+      { name: "Byzantine Empire", era: "330 – 1453 CE", countries: ["GRC", "TUR", "ITA", "EGY", "BGR", "MKD", "ALB", "CYP"], info: "Eastern Roman Empire centered at Constantinople that preserved classical learning through the Middle Ages." },
+      { name: "Mongol Empire", era: "1206 – 1368 CE", countries: ["MNG", "CHN", "RUS", "KAZ", "IRN", "IRQ", "UKR"], info: "Largest contiguous land empire in world history founded by Genghis Khan." },
+      { name: "Khmer Empire", era: "802 – 1431 CE", countries: ["KHM", "THA", "LAO", "VNM"], info: "Southeast Asian Hindu-Buddhist empire famed for constructing the massive Angkor Wat temple complex." },
+      { name: "Mali Empire", era: "1230 – 1670 CE", countries: ["MLI", "SEN", "GMB", "GIN", "MRT"], info: "West African empire renowned for vast wealth from gold trade and its legendary emperor Mansa Musa." },
+      { name: "Songhai Empire", era: "1464 – 1591 CE", countries: ["MLI", "NER", "NGA", "SEN", "BFA"], info: "Dominant West African imperial state centered at Timbuktu and Gao controling Sahelian trade." },
+      { name: "Mughal Empire", era: "1526 – 1857 CE", countries: ["IND", "PAK", "BGD", "AFG"], info: "Early modern South Asian empire celebrated for Indo-Islamic architecture including the Taj Mahal." },
+      { name: "Carthaginian Empire", era: "814 – 146 BCE", countries: ["TUN", "DZA", "ESP", "ITA", "LBY"], info: "Ancient maritime commercial empire founded by Phoenician colonists in North Africa." },
+      { name: "Parthian Empire", era: "247 BCE – 224 CE", countries: ["IRN", "IRQ", "ARM", "TKM", "AFG", "PAK"], info: "Iranian empire that successfully rivaled the Roman Empire along the Silk Road." },
+      { name: "Sasanian Empire", era: "224 – 651 CE", countries: ["IRN", "IRQ", "AFG", "PAK", "TKM", "AZE", "ARM", "GEO"], info: "Neo-Persian empire representing the peak of ancient Iranian civilization prior to the Arab conquest." },
+      { name: "Aksumite Empire", era: "100 – 940 CE", countries: ["ETH", "ERI", "YEM", "SDN"], info: "Horn of Africa trading power that minted its own coinage and erected towering stone obelisks." },
+      { name: "Achaemenid Empire", era: "550 – 330 BCE", countries: ["IRN", "EGY", "TUR", "IRQ", "AFG", "PAK", "SYR", "JOR", "ISR"], info: "First Persian Empire founded by Cyrus the Great, spanning three continents." },
+      { name: "Maurya Empire", era: "322 – 185 BCE", countries: ["IND", "PAK", "BGD", "AFG", "NPL"], info: "First pan-South Asian empire unified by Chandragupta Maurya and patronized by Ashoka the Great." },
+      { name: "Gupta Empire", era: "319 – 543 CE", countries: ["IND", "PAK", "BGD", "NPL"], info: "Golden Age of ancient India marked by extensive inventions, mathematics, science, and literature." },
+      { name: "Tang Dynasty", era: "618 – 907 CE", countries: ["CHN", "MNG", "VNM", "KAZ", "KGZ"], info: "Golden Age of East Asian cosmopolitan culture, poetry, woodblock printing, and Silk Road commerce." },
+      { name: "Han Dynasty", era: "202 BCE – 220 CE", countries: ["CHN", "KOR", "VNM", "MNG"], info: "Imperial era that established paper-making, Confucianism, and the Silk Road." },
+      { name: "Qing Dynasty", era: "1636 – 1912 CE", countries: ["CHN", "MNG", "TWN", "RUS", "KAZ"], info: "Final imperial dynasty of China established by Manchu leaders." },
+      { name: "Majapahit Empire", era: "1293 – 1527 CE", countries: ["IDN", "MYS", "SGP", "BRN", "TLS", "PHL"], info: "Maritime archipelagic empire centered on Java that unified much of Southeast Asia." },
+      { name: "Srivijaya Empire", era: "650 – 1377 CE", countries: ["IDN", "MYS", "THA", "SGP"], info: "Buddhist thalassocracy controlling the vital Malacca and Sunda straits trade routes." },
+      { name: "Abbasid Caliphate", era: "750 – 1258 CE", countries: ["IRQ", "SAU", "EGY", "IRN", "SYR", "DZA", "MAR", "TUN", "JOR", "ISR"], info: "Islamic Golden Age caliphate centered at Baghdad famed for scientific and philosophical advances." },
+      { name: "Umayyad Caliphate", era: "661 – 750 CE", countries: ["SYR", "ESP", "PRT", "SAU", "EGY", "IRN", "DZA", "MAR", "TUN", "IRQ", "AFG", "PAK"], info: "Second caliphate established after Muhammad, expanding from Iberia to the Indus River." },
+      { name: "British Empire", era: "1607 – 1997 CE", countries: ["GBR", "CAN", "AUS", "IND", "ZAF", "NGA", "KEN", "EGY", "NZL", "MYS", "JAM", "SGP"], info: "Largest global empire in history comprising dominions, colonies, and protectorates." },
+      { name: "Spanish Empire", era: "1492 – 1976 CE", countries: ["ESP", "MEX", "PER", "COL", "ARG", "CHL", "PHL", "CUB", "VEN", "ECU", "BOL", "PRY", "URY"], info: "Global maritime power that spread Hispanic language, culture, and silver trade across the Americas." },
+      { name: "Portuguese Empire", era: "1415 – 1999 CE", countries: ["PRT", "BRA", "AGO", "MOZ", "GNB", "CPV", "STP", "TLS"], info: "First modern global empire spanning South America, Africa, and maritime Asian outposts." },
+      { name: "Austro-Hungarian Empire", era: "1867 – 1918 CE", countries: ["AUT", "HUN", "CZE", "SVK", "POL", "ROU", "HRV", "SRB", "SVN", "UKR", "ITA"], info: "Dual monarchy in Central Europe known for rich musical culture and multinational heritage." },
+      { name: "Russian Empire", era: "1721 – 1917 CE", countries: ["RUS", "UKR", "BLR", "KAZ", "FIN", "POL", "GEO", "ARM", "AZE", "EST", "LVA", "LTU", "UZB", "KGZ", "TJK", "TKM"], info: "Eurasian realm spanning three continents established by Peter the Great." },
+      { name: "First French Empire", era: "1804 – 1815 CE", countries: ["FRA", "BEL", "NLD", "ITA", "DEU", "CHE", "HRV", "SVN"], info: "Hegemonic power over continental Europe established by Napoleon Bonaparte." },
+      { name: "Zulu Kingdom", era: "1816 – 1897 CE", countries: ["ZAF"], info: "Southern African monarchy unified under King Shaka with famed military impi tactics." },
+      { name: "Kingdom of Great Zimbabwe", era: "1100 – 1450 CE", countries: ["ZWE", "MOZ", "BWA"], info: "Medieval monarchy famed for massive dry-stone walled city ruins and gold trading." },
+      { name: "Kingdom of Benin", era: "1180 – 1897 CE", countries: ["NGA"], info: "West African forest kingdom world-renowned for exquisite bronze reliefs and metallurgy." },
+      { name: "Kingdom of Kongo", era: "1390 – 1914 CE", countries: ["COD", "COG", "AGO", "GAB"], info: "Central African realm located along the Congo River basin with extensive diplomatic trade ties." },
+      { name: "Chola Empire", era: "300 BCE – 1279 CE", countries: ["IND", "LKA", "IDN", "MYS", "MDG"], info: "Tamizh thalassocratic empire famed for naval expeditions across the Bay of Bengal." },
+      { name: "Polish-Lithuanian Commonwealth", era: "1569 – 1795 CE", countries: ["POL", "LTU", "BLR", "UKR", "LVA", "EST", "RUS"], info: "Multinational dual state governed by an elected monarch and noble parliament." },
+      { name: "Swedish Empire", era: "1611 – 1721 CE", countries: ["SWE", "FIN", "EST", "LVA", "DEU", "RUS"], info: "Great European Baltic power renowned for disciplined army tactics during the Thirty Years' War." },
+      { name: "Kingdom of Dahomey", era: "1600 – 1904 CE", countries: ["BEN", "TGO"], info: "West African coastal kingdom famous for all-female warrior regiments." },
+      { name: "Kingdom of Kush", era: "1070 BCE – 350 CE", countries: ["SDN", "EGY"], info: "Ancient Nubian civilization centered at Meroë famed for building steep-sided pyramids." },
+      { name: "Neo-Assyrian Empire", era: "911 – 609 BCE", countries: ["IRQ", "SYR", "TUR", "IRN", "EGY", "ISR", "LBN", "JOR"], info: "Iron Age Mesopotamian empire renowned for military organization and Nineveh palace libraries." },
+      { name: "Neo-Babylonian Empire", era: "626 – 539 BCE", countries: ["IRQ", "SYR", "JOR", "ISR", "LBN"], info: "Mesopotamian realm famous for King Nebuchadnezzar II and the Ishtar Gate." },
+      { name: "Phoenician Civilization", era: "2500 – 539 BCE", countries: ["LBN", "SYR", "ISR", "TUN", "ESP", "CYP"], info: "Seafaring Canaanite trading culture that developed the first phonetic alphabet." },
+      { name: "Seleucid Empire", era: "312 – 63 BCE", countries: ["SYR", "IRQ", "IRN", "TUR", "AFG", "PAK", "LBN", "JOR"], info: "Hellenistic state founded by Seleucus I Nicator following Alexander the Great's death." },
+      { name: "Ptolemaic Kingdom", era: "305 – 30 BCE", countries: ["EGY", "ISR", "LBN", "GRC", "CYP", "LBY"], info: "Greco-Egyptian dynasty founded by Ptolemy I ending with Cleopatra VII." },
+      { name: "Ghana Empire", era: "300 – 1240 CE", countries: ["MLI", "MRT", "SEN"], info: "Early West African empire known as the 'Land of Gold' along trans-Saharan caravan routes." },
+      { name: "Kanem-Bornu Empire", era: "700 – 1893 CE", countries: ["TCD", "NGA", "NER", "CMR"], info: "Long-lasting Central African realm surrounding Lake Chad." },
+      { name: "Oyo Empire", era: "1300 – 1896 CE", countries: ["NGA", "BEN"], info: "Yoruba empire noted for its formidable cavalry units in West Africa." },
+      { name: "Ashanti Empire", era: "1670 – 1902 CE", countries: ["GHA", "CIV"], info: "Akan empire in modern West Africa symbolised by the sacred Golden Stool." },
+      { name: "Kilwa Sultanate", era: "957 – 1513 CE", countries: ["TZA", "MOZ", "KEN", "MDG"], info: "Swahili coast trading realm that minted gold coins and constructed Coral stone palaces." },
+      { name: "Ghaznavid Empire", era: "977 – 1186 CE", countries: ["AFG", "IRN", "PAK", "IND", "TKM"], info: "Turko-Persian empire that patronized Persian literature including Firdausi's Shahnameh." },
+      { name: "Great Seljuk Empire", era: "1037 – 1194 CE", countries: ["TUR", "IRN", "IRQ", "SYR", "TKM", "AZE", "ARM", "AFG"], info: "Turko-Persian Sunni Muslim empire that initiated the Anatolian cultural transition." },
+      { name: "Delhi Sultanate", era: "1206 – 1526 CE", countries: ["IND", "PAK", "BGD"], info: "Islamic realm governing northern South Asia famed for constructing the Qutb Minar." },
+      { name: "Vijayanagara Empire", era: "1336 – 1646 CE", countries: ["IND"], info: "Southern Indian empire centered at Hampi renowned for stone architecture and arts." },
+      { name: "Taungoo Empire", era: "1510 – 1752 CE", countries: ["MMR", "THA", "LAO", "CHN"], info: "Dominant Burmese empire that briefly unified continental mainland Southeast Asia." },
+      { name: "Ayutthaya Kingdom", era: "1351 – 1767 CE", countries: ["THA", "LAO", "KHM", "MMR"], info: "Siamese kingdom celebrated as a major international trading hub in Asia." },
+      { name: "Joseon Kingdom", era: "1392 – 1897 CE", countries: ["KOR", "PRK"], info: "Korean dynasty during which Hangul script was invented by King Sejong." },
+      { name: "Tiwanaku Empire", era: "300 – 1000 CE", countries: ["BOL", "PER", "CHL", "ARG"], info: "Pre-Incan Lake Titicaca civilization famed for monolithic stone architecture like the Sun Gate." },
+      { name: "Wari Empire", era: "600 – 1000 CE", countries: ["PER"], info: "Middle Horizon Andean empire that constructed terraced fields and extensive road networks." },
+      { name: "Moche Culture", era: "100 – 700 CE", countries: ["PER"], info: "Northern Peruvian coastal civilization famed for elaborate ceramic vessels and Adobe pyramids." },
+      { name: "Zapotec Civilization", era: "700 BCE – 1521 CE", countries: ["MEX"], info: "Indigenous Mesoamerican culture centered at Monte Albán in Oaxaca." },
+      { name: "Olmec Civilization", era: "1500 – 400 BCE", countries: ["MEX"], info: "Earliest major Mesoamerican civilization famed for carving colossal basalt stone heads." },
+      { name: "Kingdom of Armenia", era: "331 BCE – 428 CE", countries: ["ARM", "TUR", "SYR", "IRQ", "AZE"], info: "Ancient Caucasus kingdom that became the first sovereign state to adopt Christianity." },
+      { name: "Georgian Golden Age", era: "1100 – 1225 CE", countries: ["GEO", "TUR", "ARM", "AZE", "RUS"], info: "Medieval Caucasus Renaissance under Queen Tamar." },
+      { name: "Grand Duchy of Lithuania", era: "1236 – 1795 CE", countries: ["LTU", "BLR", "UKR", "RUS", "POL"], info: "Major Eastern European medieval state stretching from the Baltic to the Black Sea." },
+      { name: "Frankish Empire", era: "481 – 843 CE", countries: ["FRA", "DEU", "ITA", "CHE", "BEL", "NLD", "LUX", "AUT"], info: "Western European realm united under Charlemagne as the Holy Roman precursor." },
+      { name: "First Bulgarian Empire", era: "681 – 1018 CE", countries: ["BGR", "ROU", "SRB", "MKD", "GRC", "MDA", "HUN"], info: "Medieval Balkan power that developed the Cyrillic alphabet at the Preslav Literary School." },
+      { name: "Empire of Harsha", era: "606 – 647 CE", countries: ["IND", "NPL", "PAK", "BGD"], info: "Ancient Indian empire in northern South Asia patronized by Emperor Harsha." },
+      { name: "Pala Empire", era: "750 – 1161 CE", countries: ["IND", "BGD", "NPL"], info: "Buddhist imperial power centered in Bengal famed for supporting Nalanda University." }
+    ];
+
+    function renderEmpiresSidebar() {
+      const container = document.getElementById('sidebar-container');
+      if (!container || !targetEmpire) return;
+
+      let historyHtml = '';
+      if (empiresGuesses.length > 0) {
+        historyHtml = `
+          <div class="pt-1">
+            <div class="text-[9px] uppercase font-bold text-slate-400 mb-1">Wrong Guesses:</div>
+            <div class="flex flex-wrap gap-1">
+              ${empiresGuesses.map(g => `<span class="px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 text-[10px] line-through">${g}</span>`).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="glass-card p-3 rounded-xl border border-amber-500/40 text-xs shadow-md animate-fade-in space-y-2.5 pointer-events-auto">
+          <div class="flex items-center justify-between">
+            <div class="font-bold text-amber-300 flex items-center space-x-1.5">
+              <i class="fa-solid fa-crown text-amber-400 text-sm"></i>
+              <span>Ancient Empires</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-mono font-bold">
+              ${empiresGuessesLeft} / 3 Tries Left
+            </span>
+          </div>
+
+          <!-- Target Empire Card -->
+          <div class="glass-card p-2.5 rounded-lg border border-amber-500/30 bg-slate-900/80 space-y-1">
+            <div class="text-[9px] uppercase font-bold text-amber-400 tracking-wider flex items-center justify-between">
+              <span>Target Realm</span>
+              <span class="font-mono font-extrabold text-[10px] text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/40">${targetEmpire.era}</span>
+            </div>
+            <div class="text-sm font-black text-white leading-tight">
+              "${targetEmpire.name}"
+            </div>
+            <div class="text-[10px] text-slate-300 pt-0.5 leading-relaxed italic">
+              ${targetEmpire.info}
+            </div>
+          </div>
+
+          <!-- Hint Toggle -->
+          ${!isEmpiresHintRevealed ? `
+            <button onclick="toggleEmpiresHint()" class="w-full py-1.5 px-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold flex items-center justify-center space-x-1.5 transition cursor-pointer">
+              <i class="fa-solid fa-lightbulb text-amber-400"></i>
+              <span>Reveal Territory Hint</span>
+            </button>
+          ` : `
+            <div class="glass-card p-2 rounded-lg border border-amber-500/30 bg-slate-900/80 text-[10px] text-slate-300 space-y-1 animate-fade-in">
+              <div class="flex items-center justify-between text-amber-300 font-bold mb-1">
+                <span><i class="fa-solid fa-lightbulb text-amber-400 mr-1"></i>Territory Hint</span>
+                <button onclick="toggleEmpiresHint()" class="text-slate-400 hover:text-white text-[9px] underline cursor-pointer">
+                  <i class="fa-solid fa-eye-slash mr-0.5"></i>Hide
+                </button>
+              </div>
+              <div><i class="fa-solid fa-scroll text-amber-400 mr-1"></i>Era: <strong class="text-white">${targetEmpire.era}</strong></div>
+              <div><i class="fa-solid fa-earth-americas text-teal-400 mr-1"></i>Modern Territory Nations: <strong class="text-amber-300 font-mono">${targetEmpire.countries.length} Country(ies)</strong></div>
+            </div>
+          `}
+
+          <div class="text-[11px] text-slate-300 space-y-1">
+            ${!gameOver ? `
+              <div class="flex items-center space-x-1.5 text-amber-300 font-semibold">
+                <i class="fa-solid fa-hand-pointer animate-bounce"></i>
+                <span>Click a modern country in this empire & Lock In!</span>
+              </div>
+            ` : `
+              <div class="glass-card p-2 rounded-lg border ${gameWon ? 'border-amber-500/50 bg-amber-950/40 text-amber-300' : 'border-red-500/50 bg-red-950/40 text-red-300'} text-xs font-bold text-center">
+                ${gameWon ? `Matched! Target was <strong>${targetEmpire.name}</strong>!` : `Game Over! Target empire was <strong>${targetEmpire.name}</strong>.`}
+              </div>
+            `}
+          </div>
+
+          ${historyHtml}
+        </div>
+      `;
+    }
+
+    // Infection Mode State Variables
+    let infectionGuessesLeft = 6;
+    let infectionGuesses = [];
+    let targetInfection = null;
+    let infectionClueIndex = 1;
+    let remainingInfectionIndices = [];
+
+    const INFECTION_DATABASE = [
+      {
+        name: "Black Death (Bubonic Plague)",
+        aliases: ["black death", "bubonic plague", "plague", "yersinia pestis"],
+        countries: ["ITA", "FRA", "GBR", "DEU", "CHN", "EGY", "TUR", "GRC", "ESP", "RUS"],
+        clues: [
+          "Outbreak Era: 14th Century Pandemic (1346–1353)",
+          "Primary Vector: Fleas traveling on black rats and rodents",
+          "Pathogen Type: Bacterium (Yersinia pestis)",
+          "Notable Symptom: Swollen lymph nodes (buboes) turning dark black",
+          "Impact: Wiped out 30% to 60% of the European population",
+          "Historical Icon: Doctors wearing bird-beak leather masks"
+        ],
+        info: "Historical pandemic that swept across Eurasia and North Africa in the mid-1300s."
+      },
+      {
+        name: "Ebola Virus",
+        aliases: ["ebola", "ebola virus", "ebvd"],
+        countries: ["GIN", "LBR", "SLE", "COD", "COG", "UGA"],
+        clues: [
+          "Outbreak Era: Major West African Epidemic (2013–2016)",
+          "Primary Reservoir: Fruit bats (Pteropodidae)",
+          "Transmission: Direct contact with blood or bodily fluids",
+          "Symptoms: Severe viral hemorrhagic fever and internal bleeding",
+          "Fatality Rate: Average mortality rate near 50%",
+          "Naming Origin: Named after the Ebola River in the DRC"
+        ],
+        info: "Viral hemorrhagic fever causing severe outbreaks in Central and West Africa."
+      },
+      {
+        name: "Spanish Flu (1918 Influenza)",
+        aliases: ["spanish flu", "1918 flu", "h1n1 flu", "influenza 1918"],
+        countries: ["USA", "FRA", "GBR", "ESP", "DEU", "IND", "CHN", "BRA", "ZAF", "JPN"],
+        clues: [
+          "Outbreak Era: World War I Era Pandemic (1918–1920)",
+          "Pathogen Strain: H1N1 Influenza A Virus",
+          "Global Spread: Infected roughly 500 million people worldwide",
+          "Unusual Demographic: High mortality in healthy 20-to-40-year-olds",
+          "Naming Origin: Press neutrality in WWI made Spain's reports uncensored",
+          "Estimated Deaths: 20 to 50 million fatalities worldwide"
+        ],
+        info: "Exceptionally severe flu pandemic that coincided with the end of World War I."
+      },
+      {
+        name: "Cholera",
+        aliases: ["cholera", "vibrio cholerae"],
+        countries: ["HTI", "IND", "BGD", "YEM", "ZWE", "COD"],
+        clues: [
+          "Transmission Mode: Contaminated drinking water and unwashed food",
+          "Pathogen Type: Bacterium (Vibrio cholerae)",
+          "Primary Organ Affected: Small intestine causing acute watery diarrhea",
+          "Key Treatment: Oral rehydration salts (ORS) and clean water infrastructure",
+          "Historical Discovery: John Snow traced 1854 Soho outbreak to Broad Street pump",
+          "Danger Factor: Severe dehydration can cause death within hours if untreated"
+        ],
+        info: "Acute diarrheal infection caused by ingestion of food or water contaminated with bacteria."
+      },
+      {
+        name: "Smallpox",
+        aliases: ["smallpox", "variola virus", "variola"],
+        countries: ["IND", "NGA", "ETH", "GBR", "USA", "MEX", "PER"],
+        clues: [
+          "Historical Milestone: First human disease eradicated globally by vaccination (1980)",
+          "Pathogen Type: Variola Virus",
+          "Signature Symptom: Distinctive raised fluid-filled skin pustules leaving deep scars",
+          "Pioneer Vaccine: Edward Jenner developed vaccine using cowpox virus in 1796",
+          "Ancient Impact: Devastated indigenous populations in the Americas",
+          "Current Status: Held securely only in high-security WHO laboratories"
+        ],
+        info: "Ancient viral disease officially declared eradicated worldwide in 1980."
+      },
+      {
+        name: "Malaria",
+        aliases: ["malaria", "plasmodium"],
+        countries: ["NGA", "COD", "MOZ", "UGA", "BFA", "CMR", "IND", "KEN"],
+        clues: [
+          "Primary Vector: Female Anopheles mosquito bites",
+          "Pathogen Type: Single-celled Plasmodium parasite",
+          "Effect on Human Body: Parasites multiply in liver and infect red blood cells",
+          "Prevention: Insecticide-treated bed nets and antimalarial medication",
+          "Climate Affinity: Endemic across tropical and subtropical regions",
+          "Historical Remedy: Quinine derived from the bark of the cinchona tree"
+        ],
+        info: "Mosquito-borne infectious disease prevalent across tropical regions."
+      },
+      {
+        name: "Yellow Fever",
+        aliases: ["yellow fever", "flavivirus"],
+        countries: ["BRA", "COL", "PER", "NGA", "AGO", "COD"],
+        clues: [
+          "Primary Vector: Aedes aegypti mosquitoes",
+          "Named After: Jaundice symptom turning skin and eyes yellow",
+          "Pathogen Type: Flavivirus",
+          "Historical Obstacle: Delayed construction of the Panama Canal due to worker deaths",
+          "Key Research: Walter Reed proved mosquito transmission in Cuba (1900)",
+          "Prevention: Highly effective single-dose vaccine"
+        ],
+        info: "Viral hemorrhagic disease transmitted by infected mosquitoes in tropical regions."
+      },
+      {
+        name: "Zika Virus",
+        aliases: ["zika", "zika virus"],
+        countries: ["BRA", "COL", "VEN", "PRI", "SLV", "GTM"],
+        clues: [
+          "Outbreak Era: Major Americas Epidemic (2015–2016)",
+          "Primary Vector: Daytime-active Aedes mosquitoes",
+          "Key Complication: Linked to microcephaly in newborn infants during pregnancy",
+          "Discovered Location: Zika Forest in Uganda (1947)",
+          "Other Transmissions: Transmissible sexually and through blood transfusion",
+          "Mild Symptoms: Fever, rash, joint pain, and red eyes"
+        ],
+        info: "Mosquito-borne virus that triggered an international public health emergency in 2016."
+      },
+      {
+        name: "Dengue Fever",
+        aliases: ["dengue", "dengue fever", "breakbone fever"],
+        countries: ["PHL", "VNM", "THA", "IDN", "BRA", "MEX", "IND"],
+        clues: [
+          "Nickname: 'Breakbone Fever' due to severe muscle and joint pain",
+          "Primary Vector: Aedes aegypti mosquito",
+          "Pathogen Type: Dengue virus (4 distinct serotypes)",
+          "Severe Variant: Dengue Hemorrhagic Fever leading to shock syndrome",
+          "Global Spread: Endemic in over 100 tropical countries",
+          "Symptoms: High fever, severe headache, behind-eye pain, and rash"
+        ],
+        info: "Mosquito-borne tropical disease causing high fever and severe bodily aches."
+      },
+      {
+        name: "Polio (Poliomyelitis)",
+        aliases: ["polio", "poliomyelitis", "poliovirus"],
+        countries: ["AFG", "PAK", "NGA", "USA", "IND", "EGY"],
+        clues: [
+          "Primary Target: Central nervous system affecting young children",
+          "Signature Symptom: Irreversible muscle weakness and paralysis",
+          "Medical Pioneer: Jonas Salk developed first effective vaccine (1955)",
+          "Oral Vaccine Pioneer: Albert Sabin created live oral vaccine drops",
+          "Historical Apparatus: 'Iron Lung' negative pressure respirators used for breathing",
+          "Eradication Status: Nearly eradicated worldwide"
+        ],
+        info: "Disabling and life-threatening disease caused by the poliovirus."
+      },
+      {
+        name: "Rabies",
+        aliases: ["rabies", "rabies virus", "lyssavirus"],
+        countries: ["IND", "BGD", "COD", "NGA", "CHN", "PHL"],
+        clues: [
+          "Primary Vector: Animal bites, most commonly domestic dogs and bats",
+          "Pathogen Type: Lyssavirus targeting the central nervous system",
+          "Famous Symptom: Hydrophobia (intense fear or panic when trying to swallow water)",
+          "Fatality Rate: Nearly 100% fatal once clinical symptoms appear",
+          "Vaccine Pioneer: Louis Pasteur developed first rabies vaccine in 1885",
+          "Prevention Window: Post-exposure prophylaxis administered immediately after bite"
+        ],
+        info: "Fatal viral disease transmitted from the saliva of infected animals."
+      },
+      {
+        name: "Tuberculosis (TB)",
+        aliases: ["tuberculosis", "tb", "consumption", "mycobacterium tuberculosis"],
+        countries: ["IND", "CHN", "IDN", "PHL", "PAK", "NGA", "ZAF"],
+        clues: [
+          "Historical Name: Known historically as 'Consumption' or the 'White Plague'",
+          "Pathogen Type: Bacterium (Mycobacterium tuberculosis)",
+          "Primary Organ Affected: Lungs (pulmonary TB)",
+          "Symptom: Chronic cough with blood-tinged sputum, night sweats, and weight loss",
+          "Vaccine: BCG (Bacille Calmette-Guérin) vaccine",
+          "Diagnosis: Mantoux tuberculin skin test and chest X-rays"
+        ],
+        info: "Bacterial infection that primarily attacks the lungs and spreads through air droplets."
+      },
+      {
+        name: "Plague of Justinian",
+        aliases: ["plague of justinian", "justinian plague"],
+        countries: ["GRC", "TUR", "EGY", "ITA"],
+        clues: [
+          "Outbreak Era: 6th Century Byzantine Epidemic (541–542 CE)",
+          "Affected Ruler: Emperor Justinian I, who caught the plague and survived",
+          "Pathogen Type: Early strain of Yersinia pestis bacterium",
+          "Epicenter City: Constantinople (modern Istanbul)",
+          "Economic Impact: Crippled trade and tax revenue across the Mediterranean basin",
+          "Estimated Casualties: Killed up to 20% of Constantinople's population"
+        ],
+        info: "First historically recorded pandemic of bubonic plague that struck the Eastern Roman Empire."
+      },
+      {
+        name: "Antonine Plague",
+        aliases: ["antonine plague", "plague of galen"],
+        countries: ["ITA", "GRC", "TUR", "EGY"],
+        clues: [
+          "Outbreak Era: 2nd Century Classical Epidemic (165–180 CE)",
+          "Brought By: Roman soldiers returning from campaigns in the Near East",
+          "Victim Emperor: Believed to have killed Roman Emperor Lucius Verus",
+          "Famous Physician: Detailed by the Greek doctor Galen",
+          "Likely Pathogen: Smallpox or Measles virus outbreak",
+          "Impact: Devastated the Roman army and disrupted Pax Romana stability"
+        ],
+        info: "Ancient pandemic brought to the Roman Empire by troops returning from the East."
+      },
+      {
+        name: "Epidemic Typhus",
+        aliases: ["typhus", "epidemic typhus", "camp fever", "jail fever"],
+        countries: ["DEU", "RUS", "POL", "FRA", "SRB"],
+        clues: [
+          "Primary Vector: Body lice (Pediculus humanus humanus)",
+          "Pathogen Type: Bacterium (Rickettsia prowazekii)",
+          "Historical Context: Devastated armies in wartime (e.g., Napoleon's retreat from Russia)",
+          "Nicknames: Known as 'Camp Fever', 'Jail Fever', or 'War Fever'",
+          "Symptoms: High fever, severe headache, delirium, and dark red rash",
+          "Prevention Milestone: DDT insecticide used to delouse troops during World War II"
+        ],
+        info: "Louse-borne bacterial disease closely linked with war, famine, and refugee camps."
+      },
+      {
+        name: "Measles",
+        aliases: ["measles", "rubeola"],
+        countries: ["COD", "MDG", "NGA", "UKR", "IND"],
+        clues: [
+          "Pathogen Type: Highly contagious Morbillivirus",
+          "Transmission: Airborne droplet particles staying in air for hours",
+          "Key Medical Sign: Koplik's spots (small white spots inside mouth)",
+          "Vaccine Component: Standard part of the MMR vaccine",
+          "Complication: Can lead to pneumonia, encephalitis, and immune amnesia",
+          "Contagion Rate: R0 value between 12 and 18, making it extremely transmissible"
+        ],
+        info: "Extremely contagious airborne viral infection preventable by two-dose MMR vaccine."
+      },
+      {
+        name: "Leprosy (Hansen's Disease)",
+        aliases: ["leprosy", "hansens disease", "hansen disease"],
+        countries: ["IND", "BRA", "IDN", "NGA"],
+        clues: [
+          "Pathogen Type: Slow-growing Mycobacterium leprae bacterium",
+          "Primary Target: Peripheral nerves, skin, eyes, and respiratory tract mucosa",
+          "Signature Effect: Loss of sensation leading to nerve damage and skin lesions",
+          "Historical Stigma: Patients forced into isolated leper colonies or sanatoriums",
+          "Cure: Multi-drug therapy (MDT) provided free worldwide by WHO",
+          "Named After: Gerhard Armauer Hansen who identified the bacterium in 1873"
+        ],
+        info: "Chronic bacterial infection causing skin lesions and peripheral nerve damage."
+      },
+      {
+        name: "Lyme Disease",
+        aliases: ["lyme disease", "lyme", "borreliosis"],
+        countries: ["USA", "DEU", "AUT", "FRA", "CHE"],
+        clues: [
+          "Primary Vector: Blacklegged tick (Ixodes scapularis) bites",
+          "Pathogen Type: Spirochete bacterium (Borrelia burgdorferi)",
+          "Signature Early Sign: Erythema migrans (bullseye skin rash)",
+          "Named After: Old Lyme, Connecticut, where cases were first grouped in 1975",
+          "Symptoms: Fatigue, joint swelling, facial palsy, and neurological issues",
+          "Treatment: Standard course of antibiotics (doxycycline)"
+        ],
+        info: "Tick-borne bacterial infection characterized by a bullseye pattern rash."
+      },
+      {
+        name: "SARS (SARS-CoV-1)",
+        aliases: ["sars", "sars-cov-1", "severe acute respiratory syndrome"],
+        countries: ["CHN", "HKG", "CAN", "TWN", "SGP"],
+        clues: [
+          "Outbreak Era: Early 2000s Respiratory Outbreak (2002–2004)",
+          "Pathogen Type: Novel Coronavirus (SARS-CoV-1)",
+          "Intermediate Host: Masked palm civets and horseshoe bats",
+          "Origin Region: Guangdong province, China",
+          "Key Hub: Hotel M in Hong Kong acted as a super-spreading location",
+          "Global Response: First pandemic threat of the 21st century controlled by quarantine"
+        ],
+        info: "Viral respiratory illness caused by a coronavirus that emerged in 2002."
+      },
+      {
+        name: "MERS (MERS-CoV)",
+        aliases: ["mers", "mers-cov", "middle east respiratory syndrome"],
+        countries: ["SAU", "ARE", "JOR", "KOR", "QAT"],
+        clues: [
+          "Outbreak Era: Identified in 2012 in Saudi Arabia",
+          "Primary Zoonotic Reservoir: Dromedary camels",
+          "Pathogen Type: Coronavirus (MERS-CoV)",
+          "Fatality Rate: High mortality rate around 35%",
+          "Symptoms: Severe acute respiratory illness with fever, cough, and shortness of breath",
+          "Notable Outbreak: Large hospital outbreak in South Korea (2015)"
+        ],
+        info: "Viral respiratory disease caused by a coronavirus transmitted from camels."
+      },
+      {
+        name: "Nipah Virus",
+        aliases: ["nipah", "nipah virus"],
+        countries: ["MYS", "BGD", "IND", "SGP"],
+        clues: [
+          "Primary Natural Host: Pteropus fruit bats (flying foxes)",
+          "Intermediate Vector: Pigs infected via date palm sap contaminated by bats",
+          "Named After: Kampung Sungai Nipah in Malaysia (1998 discovery)",
+          "Symptoms: Rapid brain inflammation (encephalitis) and acute respiratory distress",
+          "Fatality Rate: High fatality rate between 40% and 75%",
+          "Pathogen Family: Henipavirus genus"
+        ],
+        info: "Zoonotic virus causing severe encephalitis and respiratory illness."
+      },
+      {
+        name: "Marburg Virus",
+        aliases: ["marburg", "marburg virus", "mvd"],
+        countries: ["DEU", "AGO", "COD", "UGA", "RWA"],
+        clues: [
+          "Named After: Marburg, Germany, where 1967 laboratory outbreak occurred",
+          "Primary Reservoir: African fruit bat (Rousettus aegyptiacus)",
+          "Pathogen Family: Filovirus (closely related to Ebola)",
+          "Fatality Rate: High mortality up to 88%",
+          "Transmission: Direct blood and body fluid contact",
+          "Origin Event: Lab workers exposed to imported African green monkeys"
+        ],
+        info: "Highly fatal viral hemorrhagic fever closely related to Ebola."
+      },
+      {
+        name: "Swine Flu (2009 H1N1)",
+        aliases: ["swine flu", "2009 h1n1", "h1n1 2009"],
+        countries: ["MEX", "USA", "BRA", "GBR", "IND"],
+        clues: [
+          "Outbreak Era: 2009 Global Influenza Pandemic",
+          "Pathogen Strain: Triple-reassortant H1N1 Influenza A",
+          "Origin Region: Veracruz, Mexico",
+          "Name Origin: Contained genetic elements from pig influenza viruses",
+          "WHO Response: First WHO pandemic declaration in 40 years",
+          "Demographic Shift: Affected children and young adults more than elderly"
+        ],
+        info: "Pandemic flu strain that emerged in 2009 combining swine, avian, and human flu genes."
+      },
+      {
+        name: "Japanese Encephalitis",
+        aliases: ["japanese encephalitis", "je virus"],
+        countries: ["JPN", "IND", "CHN", "NPL", "VNM"],
+        clues: [
+          "Primary Vector: Culex tritaeniorhynchus mosquitoes in rice paddies",
+          "Amplifying Host: Pigs and wading birds",
+          "Pathogen Type: Flavivirus",
+          "Target Area: Central nervous system causing brain swelling",
+          "Prevalence: Leading cause of viral encephalitis in Asia",
+          "Prevention: Effective pediatric JE vaccine"
+        ],
+        info: "Mosquito-borne flavivirus causing severe brain inflammation across Asia."
+      },
+      {
+        name: "Cocoliztli Epidemic",
+        aliases: ["cocoliztli", "cocoliztli epidemic"],
+        countries: ["MEX", "GTM"],
+        clues: [
+          "Outbreak Era: 16th Century New Spain Catastrophe (1545–1576)",
+          "Nahuatl Name Meaning: Translates to 'pestilence' or 'disease'",
+          "Coinciding Environmental Factor: Severe mega-drought across Mesoamerica",
+          "Candidate Pathogen: Salmonella enterica (Paratyphi C) or viral hemorrhagic fever",
+          "Symptoms: High fever, bleeding from nose and eyes, dark tongue",
+          "Demographic Collapse: Devastated indigenous population of Mexico"
+        ],
+        info: "Devastating 16th-century epidemic that swept across New Spain during severe drought."
+      },
+      {
+        name: "English Sweating Sickness",
+        aliases: ["sweating sickness", "english sweating sickness", "sudor anglicus"],
+        countries: ["GBR", "DEU"],
+        clues: [
+          "Outbreak Era: Tudor Dynasty Outbreaks (1485–1551)",
+          "Victim Profile: Mostly targeted wealthy young men in Tudor England",
+          "Rapid Onset: Patients could die within 3 to 24 hours of first sweat",
+          "Notable Victims: Affected Arthur, Prince of Wales, and Anne Boleyn (who survived)",
+          "Key Symptoms: Sudden cold shivers, intense heat, profuse sweating, and delirium",
+          "Unsolved Mystery: Exact pathogen remains unknown (suspected Hantavirus)"
+        ],
+        info: "Mysterious rapid-onset disease that struck Tudor England in recurring waves."
+      },
+      {
+        name: "Lassa Fever",
+        aliases: ["lassa", "lassa fever"],
+        countries: ["NGA", "SLE", "LBR", "GIN"],
+        clues: [
+          "Primary Vector: Natal multimammate rat (Mastomys natalensis)",
+          "Named After: Lassa town in Borno State, Nigeria (1969 discovery)",
+          "Pathogen Type: Arenavirus",
+          "Transmission: Food contaminated by rat urine and feces",
+          "Signature Complication: Sensorineural deafness in 1/3 of survivors",
+          "Prevalence: Endemic across West Africa"
+        ],
+        info: "Acute viral hemorrhagic fever endemic to West Africa transmitted by rats."
+      },
+      {
+        name: "Chikungunya",
+        aliases: ["chikungunya", "chikungunya virus"],
+        countries: ["TZA", "BRA", "IND", "PRI"],
+        clues: [
+          "Name Origin: Kimakonde verb meaning 'to become contorted' due to stooped posture",
+          "Primary Vector: Aedes aegypti and Aedes albopictus mosquitoes",
+          "Pathogen Type: Alphavirus",
+          "Signature Symptom: Severe, debilitating joint pain lasting months",
+          "First Isolated: Newala district, Tanzania in 1952",
+          "Comparison: Similar symptoms to Dengue and Zika viruses"
+        ],
+        info: "Mosquito-borne viral disease causing debilitating, long-lasting joint pain."
+      },
+      {
+        name: "Typhoid Fever",
+        aliases: ["typhoid", "typhoid fever", "enteric fever"],
+        countries: ["IND", "PAK", "BGD", "IDN", "NGA"],
+        clues: [
+          "Pathogen Type: Bacterium (Salmonella enterica serovar Typhi)",
+          "Transmission: Contaminated water and food prepared by asymptomatic carriers",
+          "Famous Asymptomatic Carrier: 'Typhoid Mary' (Mary Mallon) in New York",
+          "Symptoms: High rose-spot fever, abdominal pain, constipation or diarrhea",
+          "Diagnostic Test: Widal test and blood cultures",
+          "Prevention: Typhoid conjugate vaccines (TCV) and clean sanitation"
+        ],
+        info: "Life-threatening bacterial infection spread through contaminated food and water."
+      },
+      {
+        name: "Diphtheria",
+        aliases: ["diphtheria", "corynebacterium diphtheriae"],
+        countries: ["RUS", "IND", "NGA", "VEN", "YEM"],
+        clues: [
+          "Pathogen Type: Bacterium (Corynebacterium diphtheriae)",
+          "Signature Sign: Thick gray pseudomembrane covering back of throat",
+          "Famous Historic Relay: 1925 Serum Run to Nome, Alaska (commemorated by Iditarod)",
+          "Vaccine Component: Part of the DTaP / Tdap combination vaccine",
+          "Complication: Toxin damages heart muscle (myocarditis) and nerves",
+          "Greek Root: 'Diphthera' meaning leather or hide, describing throat membrane"
+        ],
+        info: "Bacterial infection characterized by a thick gray membrane forming in the throat."
+      },
+      {
+        name: "Scarlet Fever",
+        aliases: ["scarlet fever", "scarlatina"],
+        countries: ["GBR", "CHN", "KOR", "VNM"],
+        clues: [
+          "Pathogen Type: Group A Streptococcus bacterium producing erythrogenic toxin",
+          "Signature Rash: Rough sand-paper skin rash that turns red",
+          "Tongue Sign: 'Strawberry tongue' (bumpy bright red tongue)",
+          "Historical Literary Context: Featured prominently in 19th-century novels (e.g., Little Women)",
+          "Common Precursor: Develops from strep throat infections",
+          "Treatment: Standard antibiotic therapy (penicillin)"
+        ],
+        info: "Bacterial illness causing a distinctive sandpaper-textured red rash and strawberry tongue."
+      },
+      {
+        name: "Pertussis (Whooping Cough)",
+        aliases: ["pertussis", "whooping cough"],
+        countries: ["USA", "AUS", "BRA", "ZAF"],
+        clues: [
+          "Nickname: '100-Day Cough' due to long duration of illness",
+          "Pathogen Type: Bacterium (Bordetella pertussis)",
+          "Signature Sound: High-pitched 'whoop' intake sound following severe coughing fits",
+          "Primary Victim Risk: Most dangerous to unvaccinated infants under 1 year",
+          "Vaccine Component: Included in DTaP / Tdap vaccines",
+          "Transmission: Respiratory droplets from coughing or sneezing"
+        ],
+        info: "Highly contagious respiratory bacterial disease known for violent coughing spells."
+      },
+      {
+        name: "African Trypanosomiasis (Sleeping Sickness)",
+        aliases: ["sleeping sickness", "trypanosomiasis", "african sleeping sickness"],
+        countries: ["COD", "CAF", "TCD", "AGO", "UGA"],
+        clues: [
+          "Primary Vector: Tsetse fly (Glossina genus) bites",
+          "Pathogen Type: Microscopic Trypanosoma parasite",
+          "Second Stage Sign: Disruption of sleep cycle causing daytime drowsiness and nighttime insomnia",
+          "Geographic Region: Sub-Saharan African rural regions",
+          "Treatment: Pentamidine, suramin, or fexinidazole oral drugs",
+          "Animal Variant: Known as Nagana in cattle"
+        ],
+        info: "Parasitic disease transmitted by tsetse flies that disrupts human sleep cycles."
+      },
+      {
+        name: "Chagas Disease",
+        aliases: ["chagas", "chagas disease", "american trypanosomiasis"],
+        countries: ["BRA", "ARG", "BOL", "MEX", "COL"],
+        clues: [
+          "Primary Vector: Triatomine bugs (known as 'Kissing Bugs')",
+          "Pathogen Type: Protozoan parasite (Trypanosoma cruzi)",
+          "Named After: Brazilian physician Carlos Chagas who discovered it in 1909",
+          "Romaña's Sign: Swelling of the eyelid near the bug bite location",
+          "Chronic Phase: Causes enlarged heart (cardiomyopathy) and enlarged colon",
+          "Geographic Domain: Endemic throughout Latin America"
+        ],
+        info: "Tropical parasitic disease spread by kissing bugs affecting heart and digestive organs."
+      },
+      {
+        name: "Schistosomiasis (Bilharzia)",
+        aliases: ["schistosomiasis", "bilharzia", "snail fever"],
+        countries: ["EGY", "NGA", "MDG", "TZA", "COD"],
+        clues: [
+          "Intermediate Host: Freshwater snails releasing larval parasites into water",
+          "Pathogen Type: Parasitic flatworms (Schistosoma blood flukes)",
+          "Transmission: Swimming or wading in contaminated fresh water",
+          "Named After: Theodor Bilharz who identified the parasite in Cairo (1851)",
+          "Symptoms: Abdominal pain, blood in urine/stool, and liver damage",
+          "Treatment Standard: Single-dose praziquantel medication"
+        ],
+        info: "Parasitic disease caused by blood flukes hosted in freshwater snails."
+      },
+      {
+        name: "Leishmaniasis",
+        aliases: ["leishmaniasis", "kala-azar"],
+        countries: ["BRA", "IND", "IRQ", "SYR", "SDN"],
+        clues: [
+          "Primary Vector: Bites of infected female phlebotomine sandflies",
+          "Pathogen Type: Protozoan parasites of the Leishmania genus",
+          "Visceral Variant: Known as 'Kala-Azar' or black fever, attacking internal organs",
+          "Cutaneous Variant: Causes chronic skin ulcers leaving scars",
+          "Risk Factor: Poverty, malnutrition, deforestation, and urbanization",
+          "Cell Target: Macrophages in the human immune system"
+        ],
+        info: "Sandfly-transmitted parasitic disease causing skin ulcers or organ swelling."
+      },
+      {
+        name: "Rift Valley Fever",
+        aliases: ["rift valley fever", "rvf"],
+        countries: ["KEN", "SOM", "SAU", "YEM", "ZAF"],
+        clues: [
+          "Primary Vector: Mosquitoes (Aedes and Culex species)",
+          "Target Livestock: Causes mass abortion storms in sheep, goats, and cattle",
+          "Discovered Region: Great Rift Valley in Kenya (1931)",
+          "Pathogen Type: Phlebovirus",
+          "Human Symptoms: Mild flu-like illness to retinal lesions and hemorrhagic fever",
+          "Outbreak Trigger: Periods of heavy rainfall and flooding"
+        ],
+        info: "Viral zoonosis affecting domestic animals and humans transmitted by mosquitoes."
+      },
+      {
+        name: "Crimean-Congo Hemorrhagic Fever",
+        aliases: ["crimean congo fever", "cchf"],
+        countries: ["TUR", "IRN", "PAK", "RUS", "BGR"],
+        clues: [
+          "Primary Vector: Hyalomma tick bites and livestock blood contact",
+          "Pathogen Type: Orthonairovirus",
+          "High-Risk Occupations: Abattoir workers, veterinarians, and agricultural staff",
+          "First Described: Crimea in 1944, later identified in Congo in 1969",
+          "Symptoms: High fever, muscle ache, dizziness, and petechial rash",
+          "Fatality Rate: Mortality rate up to 40%"
+        ],
+        info: "Tick-borne hemorrhagic fever virus widespread in Eastern Europe and the Middle East."
+      },
+      {
+        name: "Hantavirus Pulmonary Syndrome",
+        aliases: ["hantavirus", "hps"],
+        countries: ["USA", "ARG", "CHL", "BRA"],
+        clues: [
+          "Primary Vector: Deer mice and wild rodent urine/feces dust",
+          "Transmission Mode: Inhaling aerosolized rodent droppings during cleaning",
+          "Target Organ: Lungs filling with fluid causing respiratory failure",
+          "Famous 1993 Outbreak: Four Corners region in the southwestern USA",
+          "Pathogen Type: Sin Nombre Virus (Hantaviridae)",
+          "Non-Vector Spread: Not transmitted from person-to-person in North America"
+        ],
+        info: "Severe respiratory disease transmitted by inhaling dust contaminated by rodent droppings."
+      },
+      {
+        name: "Legionnaires' Disease",
+        aliases: ["legionnaires disease", "legionella", "legionellosis"],
+        countries: ["USA", "ESP", "ITA", "FRA"],
+        clues: [
+          "Pathogen Type: Bacterium (Legionella pneumophila)",
+          "Transmission Mode: Inhaling mist from contaminated water systems (AC towers, hot tubs)",
+          "Name Origin: 1976 outbreak at an American Legion convention in Philadelphia",
+          "Target Disease: Severe form of pneumonia accompanied by high fever",
+          "Environmental Niche: Thrives in warm aquatic environments",
+          "Milder Variant: Pontiac Fever (flu-like without pneumonia)"
+        ],
+        info: "Atypical pneumonia caused by bacteria growing in warm water building systems."
+      },
+      {
+        name: "Anthrax Outbreak",
+        aliases: ["anthrax", "bacillus anthracis"],
+        countries: ["RUS", "ZWE", "USA", "GBR"],
+        clues: [
+          "Pathogen Type: Spore-forming bacterium (Bacillus anthracis)",
+          "Transmission Forms: Cutaneous (skin black eschar), Gastrointestinal, or Inhalation",
+          "Spore Survival: Bacterial endospores can remain dormant in soil for decades",
+          "Historic 2001 Event: Letters containing anthrax spores mailed to US media/senators",
+          "Sverdlovsk Leak: 1979 accidental bioweapons facility release in Russia",
+          "Signature Skin Sign: Painless skin ulcer with a necrotic black center"
+        ],
+        info: "Spore-forming bacterial disease known for dark skin lesions and spore longevity."
+      },
+      {
+        name: "West Nile Virus",
+        aliases: ["west nile", "west nile virus", "wnv"],
+        countries: ["UGA", "USA", "EGY", "GRC", "ITA"],
+        clues: [
+          "Primary Vector: Culex mosquitoes",
+          "Natural Reservoir: Wild birds (especially crows and jays)",
+          "Discovery Origin: West Nile district of Uganda in 1937",
+          "Severe Complication: Encephalitis or meningitis in ~1% of infected cases",
+          "North American Entry: Introduced to New York City in 1999",
+          "Asymptomatic Rate: 80% of infected humans show no symptoms"
+        ],
+        info: "Mosquito-borne flavivirus maintained in bird populations."
+      },
+      {
+        name: "Plague of Athens",
+        aliases: ["plague of athens"],
+        countries: ["GRC"],
+        clues: [
+          "Outbreak Era: 430 BCE during the Peloponnesian War",
+          "Historical Chronicler: Detailed meticulously by historian Thucydides",
+          "Impact on Leadership: Killed the great Athenian leader Pericles",
+          "Siege Context: Struck overcrowded Athens while under siege by Sparta",
+          "Candidate Pathogens: Typhoid fever, Smallpox, or Ebola-like virus",
+          "Civilization Impact: Shifted military balance toward Sparta in the Peloponnesian War"
+        ],
+        info: "Devastating ancient epidemic that struck democratic Athens during war with Sparta."
+      },
+      {
+        name: "Plague of Cyprian",
+        aliases: ["plague of cyprian"],
+        countries: ["ITA", "EGY", "TUN"],
+        clues: [
+          "Outbreak Era: 3rd Century Imperial Crisis (249–262 CE)",
+          "Named After: Saint Cyprian, Bishop of Carthage, who witnessed the plague",
+          "Daily Toll: Reportedly killed up to 5,000 people per day in Rome at its peak",
+          "Candidate Pathogens: Filovirus (like Ebola) or Influenza",
+          "Religious Shift: Accelerated the growth of Christianity due to Christian caregiving",
+          "Victim Emperor: Believed to have killed Emperor Hostilian"
+        ],
+        info: "Ancient Mediterranean pandemic that severely weakened the Roman Empire in the 3rd century."
+      },
+      {
+        name: "Great Plague of London",
+        aliases: ["great plague of london", "london plague 1665"],
+        countries: ["GBR"],
+        clues: [
+          "Outbreak Era: 1665–1666 (Final major bubonic plague outbreak in England)",
+          "Casualty Count: Killed roughly 100,000 people (1/4 of London's population)",
+          "Historical Diary: Documented by Samuel Pepys and Daniel Defoe",
+          "Ending Event: Ended around the time of the Great Fire of London in September 1666",
+          "Quarantine Sign: Red crosses painted on doors of infected homes with 'Lord Have Mercy Upon Us'",
+          "Pathogen: Yersinia pestis transmitted by rat fleas"
+        ],
+        info: "The last major outbreak of bubonic plague in England, killing a quarter of London."
+      },
+      {
+        name: "Great Plague of Marseille",
+        aliases: ["great plague of marseille", "marseille plague 1720"],
+        countries: ["FRA"],
+        clues: [
+          "Outbreak Era: 1720 Major Western European Outbreak",
+          "Origin Ship: Arrived via merchant vessel Grand-Saint-Antoine from the Levant",
+          "Casualty Count: Killed 100,000 people across Marseille and Provence",
+          "Quarantine Defense: Construction of the Wall of the Plague (Mur de la Peste)",
+          "Historical Legend: 'Four Thieves Vinegar' concoction used by grave robbers",
+          "Pathogen: Yersinia pestis bacterium"
+        ],
+        info: "The last major bubonic plague epidemic in Western Europe centered in southern France."
+      },
+      {
+        name: "Manchurian Plague",
+        aliases: ["manchurian plague", "pneumonic plague 1910"],
+        countries: ["CHN", "RUS"],
+        clues: [
+          "Outbreak Era: 1910–1911 Winter Epidemic",
+          "Primary Animal Source: Tarbagan marmots hunted for fur",
+          "Variant: Pneumonic Plague (spread directly from person-to-person via breath)",
+          "Medical Hero: Dr. Wu Lien-teh designed early cotton gauze face masks to control it",
+          "Fatality Rate: Extremely high mortality rate (~100% untreated)",
+          "Geographic Region: Northeast China (Manchuria)"
+        ],
+        info: "Severe pneumonic plague epidemic in Northeast China controlled by early mask mandates."
+      },
+      {
+        name: "Third Plague Pandemic",
+        aliases: ["third plague pandemic", "1855 plague"],
+        countries: ["CHN", "IND", "USA", "MDG"],
+        clues: [
+          "Outbreak Era: Started in Yunnan, China in 1855 and spread globally",
+          "Scientific Breakthrough: Alexandre Yersin isolated Yersinia pestis in Hong Kong (1894)",
+          "India Impact: Killed over 12 million people across British India",
+          "San Francisco Outbreak: Reached California in 1900 via steamship lines",
+          "Vector Discovery: Paul-Louis Simond proved fleas transmit plague from rats",
+          "Duration: Considered active by WHO until 1959"
+        ],
+        info: "Major bubonic plague pandemic that began in China in 1855 and spread across all continents."
+      },
+      {
+        name: "Hendra Virus",
+        aliases: ["hendra", "hendra virus"],
+        countries: ["AUS"],
+        clues: [
+          "Primary Reservoir: Flying fox fruit bats (Pteropus genus)",
+          "Intermediate Host: Thoroughbred racehorses",
+          "Named After: Hendra suburb of Brisbane, Queensland (1994 discovery)",
+          "Pathogen Family: Henipavirus genus",
+          "Human Impact: High mortality rate in veterinarians treating infected horses",
+          "Symptoms: Severe respiratory and neurological illness"
+        ],
+        info: "Rare bat-borne virus endemic to Australia causing severe disease in horses and humans."
+      },
+      {
+        name: "Mpox (Monkeypox)",
+        aliases: ["mpox", "monkeypox", "monkeypox virus"],
+        countries: ["COD", "NGA", "GBR", "USA", "ESP"],
+        clues: [
+          "Pathogen Family: Orthopoxvirus (related to Smallpox)",
+          "Discovery Year: First identified in laboratory monkeys in 1958",
+          "Outbreak Milestone: Declared a Global Public Health Emergency in 2022 & 2024",
+          "Symptoms: Painful rash pustules, swollen lymph nodes, and fever",
+          "Vaccine Defense: JYNNEOS smallpox/mpox vaccine",
+          "Transmission: Close physical or skin-to-skin contact"
+        ],
+        info: "Orthopoxvirus infection causing painful skin lesions and swollen lymph nodes."
+      },
+      {
+        name: "O'nyong-nyong Virus",
+        aliases: ["onyong nyong", "o'nyong-nyong", "onnn"],
+        countries: ["UGA", "KEN", "TZA"],
+        clues: [
+          "Name Origin: Acholi phrase meaning 'weakening of the joints'",
+          "Primary Vector: Anopheles mosquitoes (unusual for an alphavirus)",
+          "First Isolated: Gulu district of Uganda in 1959",
+          "Pathogen Family: Alphavirus",
+          "Key Symptoms: Joint pain, fever, eye redness, and rash",
+          "Historic Outbreak: Infected over 2 million people in East Africa"
+        ],
+        info: "Anopheles mosquito-borne alphavirus endemic to East Africa causing acute joint pain."
+      },
+      {
+        name: "Kuru (Prion Disease)",
+        aliases: ["kuru", "kuru disease"],
+        countries: ["PNG"],
+        clues: [
+          "Pathogen Type: Infectious misfolded Prion protein",
+          "Affected Tribe: Fore people of the Eastern Highlands",
+          "Transmission Mode: Endocannibalistic funeral rituals consuming deceased relatives",
+          "Name Origin: Fore word meaning 'to shake' or 'shivering'",
+          "Nobel Prize Research: Carleton Gajdusek proved transmissible spongiform encephalopathy",
+          "Symptoms: Loss of coordination (ataxia), tremors, and involuntary laughing fits"
+        ],
+        info: "Incurable prion disease discovered among the Fore people of Papua New Guinea."
+      }
+    ];
+
+    function renderInfectionSidebar() {
+      const container = document.getElementById('sidebar-container');
+      if (!container || !targetInfection) return;
+
+      let cluesHtml = '';
+      for (let i = 0; i < 6; i++) {
+        const clueNum = i + 1;
+        if (clueNum <= infectionClueIndex || gameOver) {
+          cluesHtml += `
+            <div class="glass-card p-2 rounded-lg border border-emerald-500/40 bg-slate-900/80 text-[11px] animate-fade-in">
+              <div class="flex items-center space-x-1.5 text-emerald-300 font-bold mb-0.5">
+                <i class="fa-solid fa-biohazard text-emerald-400 text-xs"></i>
+                <span>Outbreak Clue #${clueNum}</span>
+              </div>
+              <div class="text-slate-200 text-[10px] pl-4 font-medium">${targetInfection.clues[i]}</div>
+            </div>
+          `;
+        } else {
+          cluesHtml += `
+            <div class="glass-card px-2 py-1 rounded-lg border border-slate-800 text-[10px] text-slate-500 flex items-center space-x-1.5 opacity-60">
+              <i class="fa-solid fa-lock text-[9px]"></i>
+              <span>Clue #${clueNum} Locked (Guess to reveal)</span>
+            </div>
+          `;
+        }
+      }
+
+      let historyHtml = '';
+      if (infectionGuesses.length > 0) {
+        historyHtml = `
+          <div class="pt-1">
+            <div class="text-[9px] uppercase font-bold text-slate-400 mb-1">Previous Guesses:</div>
+            <div class="flex flex-wrap gap-1">
+              ${infectionGuesses.map(g => `<span class="px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 text-[10px] line-through">${g}</span>`).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="glass-card p-3 rounded-xl border border-emerald-500/40 text-xs shadow-md animate-fade-in space-y-2.5 pointer-events-auto max-h-full overflow-y-auto">
+          <div class="flex items-center justify-between">
+            <div class="font-bold text-emerald-300 flex items-center space-x-1.5">
+              <i class="fa-solid fa-biohazard text-emerald-400 text-sm"></i>
+              <span>Infection</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold">
+              ${infectionGuessesLeft} / 6 Guesses Left
+            </span>
+          </div>
+
+          <div class="text-[10px] text-slate-300 italic bg-slate-900/60 p-2 rounded-lg border border-emerald-500/20">
+            Infected countries are highlighted on the 3D globe. Type the name of the mystery epidemic or plague!
+          </div>
+
+          <div class="space-y-1.5">
+            ${cluesHtml}
+          </div>
+
+          ${!gameOver ? `
+            <form onsubmit="submitInfectionGuess(event)" class="space-y-1.5 pt-1">
+              <div class="relative flex items-center">
+                <input 
+                  id="infection-guess-input"
+                  type="text" 
+                  placeholder="Type disease/plague name..." 
+                  autocomplete="off"
+                  class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-400 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 outline-none transition"
+                />
+              </div>
+              <button 
+                type="submit"
+                class="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs shadow-lg transition cursor-pointer flex items-center justify-center space-x-1.5">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>Submit Answer</span>
+              </button>
+            </form>
+          ` : `
+            <div class="glass-card p-2 rounded-lg border ${gameWon ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300' : 'border-red-500/50 bg-red-950/40 text-red-300'} text-xs font-bold text-center">
+              ${gameWon ? `Pathogen Identified! The disease was <strong>${targetInfection.name}</strong>!` : `Game Over! The outbreak was <strong>${targetInfection.name}</strong>.`}
+            </div>
+          `}
+
+          ${historyHtml}
+        </div>
+      `;
+    }
+
+    function submitInfectionGuess(e) {
+      if (e) e.preventDefault();
+      if (gameOver || gameMode !== 'infection' || !targetInfection) return;
+
+      const inputEl = document.getElementById('infection-guess-input');
+      if (!inputEl) return;
+
+      const val = inputEl.value.trim();
+      if (!val) return;
+
+      const cleanVal = val.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const isCorrect = targetInfection.aliases.some(alias => alias.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanVal);
+
+      if (isCorrect) {
+        sounds.playWin();
+        gameOver = true;
+        gameWon = true;
+        infectionClueIndex = 6;
+
+        if (window.confetti) confetti({ particleCount: 110, spread: 70, origin: { y: 0.6 } });
+
+        showFeedbackToast(`<i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Outstanding! It is <strong>${targetInfection.name}</strong>!`, 'win');
+
+        const winTextContainer = document.getElementById('win-text-container');
+        if (winTextContainer) {
+          winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-emerald-300 border border-emerald-500/50 shadow-2xl flex items-center space-x-2";
+          winTextContainer.innerHTML = `<span><i class="fa-solid fa-biohazard text-emerald-400 mr-1"></i> Correct! Outbreak identified: <strong class="underline font-bold">${targetInfection.name}</strong>!</span>`;
+        }
+
+        renderInfectionSidebar();
+        revealPlayAnother();
+
+      } else {
+        sounds.playWrong();
+        infectionGuesses.push(val);
+        infectionGuessesLeft--;
+
+        if (infectionGuessesLeft > 0) {
+          infectionClueIndex++;
+          renderInfectionSidebar();
+          showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! Outbreak clue #${infectionClueIndex} unlocked. (${infectionGuessesLeft} guesses left)`, 'wrong');
+        } else {
+          gameOver = true;
+          gameWon = false;
+          showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of guesses! The mystery outbreak was <strong>${targetInfection.name}</strong>.`, 'wrong');
+
+          const winTextContainer = document.getElementById('win-text-container');
+          if (winTextContainer) {
+            winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
+            winTextContainer.innerHTML = `<span><i class="fa-solid fa-biohazard text-emerald-400 mr-1"></i> Out of guesses! Disease was <strong class="underline font-bold">${targetInfection.name}</strong></span>`;
+          }
+
+          renderInfectionSidebar();
+          revealPlayAnother();
+        }
+      }
+
+      const inputElClear = document.getElementById('infection-guess-input');
+      if (inputElClear) inputElClear.value = '';
+    }
+    window.submitInfectionGuess = submitInfectionGuess;
+
+    // Languages Mode State Variables
+    let languagesGuessesLeft = 3;
+    let languagesGuesses = [];
+    let targetLanguage = null;
+    let isLanguagesHintRevealed = false;
+
+    function toggleLanguagesHint() {
+      isLanguagesHintRevealed = !isLanguagesHintRevealed;
+      renderLanguagesSidebar();
+    }
+    window.toggleLanguagesHint = toggleLanguagesHint;
+
+    const LANGUAGES_DATABASE = [
+      { name: "Spanish", native: "Español", family: "Romance", countries: ["ESP", "MEX", "ARG", "COL", "CHL", "PER", "VEN", "CUB", "ECU", "GTM", "BOL", "DOM", "HND", "PRY", "SLV", "NIC", "CRI", "PAN", "URY", "GNQ"], info: "Global language with over 480 million native speakers using Latin script." },
+      { name: "Portuguese", native: "Português", family: "Romance", countries: ["PRT", "BRA", "AGO", "MOZ", "CPV", "GNB", "STP", "TLS"], info: "Romance language spoken across Europe, South America, and Africa." },
+      { name: "French", native: "Français", family: "Romance", countries: ["FRA", "BEL", "CHE", "CAN", "COD", "CIV", "MDG", "CMR", "NER", "BFA", "MLI", "SEN", "TGO", "GIN", "BEN", "COG", "GAB"], info: "Official language of international diplomacy and 29 sovereign nations." },
+      { name: "German", native: "Deutsch", family: "Germanic", countries: ["DEU", "AUT", "CHE", "LIE", "LUX"], info: "West Germanic language renowned for compound words and three grammatical genders." },
+      { name: "English", native: "English", family: "Germanic", countries: ["GBR", "USA", "CAN", "AUS", "NZL", "IRL", "ZAF", "JAM", "NGA", "KEN", "SGP"], info: "Global lingua franca across international business, aviation, and science." },
+      { name: "Arabic", native: "العربية", family: "Afroasiatic", countries: ["SAU", "EGY", "DZA", "IRQ", "MAR", "SDN", "SYR", "TUN", "JOR", "ARE", "LBN", "OMN", "KWT", "QAT", "BHR"], info: "Semitic language written right-to-left in a cursive calligraphic script." },
+      { name: "Russian", native: "Русский", family: "Slavic", countries: ["RUS", "BLR", "KAZ", "KGZ"], info: "East Slavic language written in the Cyrillic alphabet." },
+      { name: "Japanese", native: "日本語", family: "Japonic", countries: ["JPN"], info: "Uses a unique writing system combining Kanji characters with Hiragana and Katakana syllabaries." },
+      { name: "Korean", native: "한국어", family: "Koreanic", countries: ["KOR", "PRK"], info: "Written in Hangul, a featural alphabet designed systematically in the 15th century." },
+      { name: "Mandarin Chinese", native: "中文", family: "Sino-Tibetan", countries: ["CHN", "TWN", "SGP"], info: "Tonal Sino-Tibetan language with the largest number of native speakers in the world." },
+      { name: "Hindi", native: "हिन्दी", family: "Indo-Aryan", countries: ["IND"], info: "Indo-Aryan language written in the Devanagari script." },
+      { name: "Bengali", native: "বাংলা", family: "Indo-Aryan", countries: ["BGD", "IND"], info: "Rich literary language written in the Eastern Nagari Bengali-Assamese script." },
+      { name: "Swahili", native: "Kiswahili", family: "Bantu", countries: ["KEN", "TZA", "UGA", "RWA"], info: "Bantu lingua franca widely spoken across East Africa." },
+      { name: "Amharic", native: "አማርኛ", family: "Afroasiatic", countries: ["ETH"], info: "Afroasiatic language written in the unique Ge'ez abugida script." },
+      { name: "Thai", native: "ไทย", family: "Kra-Dai", countries: ["THA"], info: "Tonal language written in its own traditional Thai script with 44 consonant symbols." },
+      { name: "Vietnamese", native: "Tiếng Việt", family: "Austroasiatic", countries: ["VNM"], info: "Austroasiatic tonal language written using a Latin alphabet modified with diacritics." },
+      { name: "Tagalog", native: "Wikang Tagalog", family: "Austronesian", countries: ["PHL"], info: "Austronesian language serving as the basis for the national language of an archipelagic nation." },
+      { name: "Indonesian", native: "Bahasa Indonesia", family: "Austronesian", countries: ["IDN"], info: "Standardized register of Malay acting as a unifying lingua franca across thousands of islands." },
+      { name: "Turkish", native: "Türkçe", family: "Turkic", countries: ["TUR"], info: "Turkic language using agglutination and vowel harmony, written in Latin script since 1928." },
+      { name: "Italian", native: "Italiano", family: "Romance", countries: ["ITA", "CHE", "SMR", "VAT"], info: "Romance language closest in vocabulary to Classical Latin, renowned in opera and art." },
+      { name: "Dutch", native: "Nederlands", family: "Germanic", countries: ["NLD", "SUR"], info: "West Germanic language closely related to German and English." },
+      { name: "Polish", native: "Polski", family: "Slavic", countries: ["POL"], info: "West Slavic language written in Latin script with distinctive nasal vowels." },
+      { name: "Greek", native: "Ελληνικά", family: "Hellenic", countries: ["GRC", "CYP"], info: "Independent branch of Indo-European written in the historic Greek alphabet." },
+      { name: "Hebrew", native: "עברית", family: "Afroasiatic", countries: ["ISR"], info: "Canaanite Semitic language revived as a spoken mother tongue in the modern era." },
+      { name: "Swedish", native: "Svenska", family: "Germanic", countries: ["SWE", "FIN"], info: "North Germanic language characterized by pitch accent and high mutual intelligibility with neighbors." },
+      { name: "Norwegian", native: "Norsk", family: "Germanic", countries: ["NOR"], info: "North Germanic language with two official written forms: Bokmål and Nynorsk." },
+      { name: "Danish", native: "Dansk", family: "Germanic", countries: ["DNK"], info: "Nordic language with distinct soft consonants and stød glottalization." },
+      { name: "Finnish", native: "Suomi", family: "Uralic", countries: ["FIN"], info: "Uralic non-Indo-European language noted for extensive noun declension cases." },
+      { name: "Hungarian", native: "Magyar", family: "Uralic", countries: ["HUN"], info: "Uralic language in Central Europe featuring complex agglutinative grammar." },
+      { name: "Czech", native: "Čeština", family: "Slavic", countries: ["CZE"], info: "West Slavic language famous for consonants with caron accent marks like 'ř'." },
+      { name: "Romanian", native: "Română", family: "Romance", countries: ["ROU", "MDA"], info: "Eastern Romance language that has preserved Latin grammatical case structures." }
+    ];
+
+    function renderLanguagesSidebar() {
+      const container = document.getElementById('sidebar-container');
+      if (!container || !targetLanguage) return;
+
+      let historyHtml = '';
+      if (languagesGuesses.length > 0) {
+        historyHtml = `
+          <div class="pt-1">
+            <div class="text-[9px] uppercase font-bold text-slate-400 mb-1">Wrong Guesses:</div>
+            <div class="flex flex-wrap gap-1">
+              ${languagesGuesses.map(g => `<span class="px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 text-[10px] line-through">${g}</span>`).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="glass-card p-3 rounded-xl border border-sky-500/40 text-xs shadow-md animate-fade-in space-y-2.5 pointer-events-auto">
+          <div class="flex items-center justify-between">
+            <div class="font-bold text-sky-300 flex items-center space-x-1.5">
+              <i class="fa-solid fa-language text-sky-400 text-sm"></i>
+              <span>Languages</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/40 text-[10px] font-mono font-bold">
+              ${languagesGuessesLeft} / 3 Tries Left
+            </span>
+          </div>
+
+          <!-- Target Language Card -->
+          <div class="glass-card p-2.5 rounded-lg border border-sky-500/30 bg-slate-900/80 space-y-1">
+            <div class="text-[9px] uppercase font-bold text-amber-400 tracking-wider flex items-center justify-between">
+              <span>Target Language</span>
+              <span class="font-mono font-black text-xs text-sky-300 bg-sky-500/20 px-1.5 py-0.5 rounded border border-sky-500/40">${targetLanguage.native}</span>
+            </div>
+            <div class="text-sm font-black text-white leading-tight">
+              "${targetLanguage.name}"
+            </div>
+            <div class="text-[10px] text-slate-300 pt-0.5 leading-relaxed italic">
+              ${targetLanguage.info}
+            </div>
+          </div>
+
+          <!-- Hint Toggle -->
+          ${!isLanguagesHintRevealed ? `
+            <button onclick="toggleLanguagesHint()" class="w-full py-1.5 px-2 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[10px] font-bold flex items-center justify-center space-x-1.5 transition cursor-pointer">
+              <i class="fa-solid fa-lightbulb text-amber-400"></i>
+              <span>Reveal Language Family Hint</span>
+            </button>
+          ` : `
+            <div class="glass-card p-2 rounded-lg border border-sky-500/30 bg-slate-900/80 text-[10px] text-slate-300 space-y-1 animate-fade-in">
+              <div class="flex items-center justify-between text-sky-300 font-bold mb-1">
+                <span><i class="fa-solid fa-lightbulb text-amber-400 mr-1"></i>Language Family</span>
+                <button onclick="toggleLanguagesHint()" class="text-slate-400 hover:text-white text-[9px] underline cursor-pointer">
+                  <i class="fa-solid fa-eye-slash mr-0.5"></i>Hide
+                </button>
+              </div>
+              <div><i class="fa-solid fa-diagram-project text-amber-400 mr-1"></i>Family: <strong class="text-white">${targetLanguage.family}</strong></div>
+              <div><i class="fa-solid fa-earth-americas text-teal-400 mr-1"></i>Valid Speaker Nations: <strong class="text-sky-300 font-mono">${targetLanguage.countries.length} Country(ies)</strong></div>
+            </div>
+          `}
+
+          <div class="text-[11px] text-slate-300 space-y-1">
+            ${!gameOver ? `
+              <div class="flex items-center space-x-1.5 text-amber-300 font-semibold">
+                <i class="fa-solid fa-hand-pointer animate-bounce"></i>
+                <span>Click a country using this as MAIN language & Lock In!</span>
+              </div>
+            ` : `
+              <div class="glass-card p-2 rounded-lg border ${gameWon ? 'border-sky-500/50 bg-sky-950/40 text-sky-300' : 'border-red-500/50 bg-red-950/40 text-red-300'} text-xs font-bold text-center">
+                ${gameWon ? `Match Complete! Target was <strong>${targetLanguage.name}</strong>!` : `Game Over! Target language was <strong>${targetLanguage.name}</strong>.`}
+              </div>
+            `}
+          </div>
+
+          ${historyHtml}
+        </div>
+      `;
+    }
+
+    // Payout Mode State Variables
+    let payoutGuessesLeft = 3;
+    let payoutGuesses = [];
+    let targetPayoutCurrency = null;
+    let isPayoutHintRevealed = false;
+
+    function togglePayoutHint() {
+      isPayoutHintRevealed = !isPayoutHintRevealed;
+      renderPayoutSidebar();
+    }
+    window.togglePayoutHint = togglePayoutHint;
+
+    const PAYOUT_DATABASE = [
+      { currency: "Euro", symbol: "€", code: "EUR", countries: ["FRA", "DEU", "ITA", "ESP", "PRT", "NLD", "BEL", "AUT", "FIN", "GRC", "IRL", "SVK", "SVN", "EST", "LVA", "LTU", "LUX", "CYP", "MLT", "HRV"], info: "Used as the official main currency across 20 member nations." },
+      { currency: "Dollar (USD)", symbol: "$", code: "USD", countries: ["USA", "ECU", "SLV", "PAN"], info: "Major global reserve currency used across multiple member economies." },
+      { currency: "Yen", symbol: "¥", code: "JPY", countries: ["JPN"], info: "Major East Asian currency renowned for high denomination banknotes." },
+      { currency: "Pound Sterling", symbol: "£", code: "GBP", countries: ["GBR"], info: "Historic European currency abbreviated as GBP with the £ symbol." },
+      { currency: "Franc (CHF)", symbol: "CHF", code: "CHF", countries: ["CHE", "LIE"], info: "Alpine currency known for financial stability and neutral banking." },
+      { currency: "Dollar (CAD)", symbol: "CA$", code: "CAD", countries: ["CAN"], info: "North American currency featuring a bird on its 1-unit coin." },
+      { currency: "Dollar (AUD)", symbol: "A$", code: "AUD", countries: ["AUS"], info: "Southern Hemisphere currency printed on durable polymer substrate." },
+      { currency: "Rupee", symbol: "₹", code: "INR", countries: ["IND"], info: "Major South Asian currency featuring iconic national emblems." },
+      { currency: "Yuan (Renminbi)", symbol: "¥", code: "CNY", countries: ["CHN"], info: "Major East Asian currency officially translated as 'People's Money'." },
+      { currency: "Real", symbol: "R$", code: "BRL", countries: ["BRA"], info: "South American currency introduced in 1994 to stabilize inflation." },
+      { currency: "Peso (MXN)", symbol: "Mex$", code: "MXN", countries: ["MEX"], info: "Latin American currency that historically influenced early global trade." },
+      { currency: "Rand", symbol: "R", code: "ZAR", countries: ["ZAF", "LSO", "NAM", "SWZ"], info: "Currency named after a famous mineral ridge rich in gold deposits." },
+      { currency: "Won", symbol: "₩", code: "KRW", countries: ["KOR"], info: "East Asian currency subdivided into 100 smaller units." },
+      { currency: "Baht", symbol: "฿", code: "THB", countries: ["THA"], info: "Southeast Asian currency originating from a traditional unit of mass." },
+      { currency: "Krona (SEK)", symbol: "kr", code: "SEK", countries: ["SWE"], info: "Nordic currency whose name translates directly to 'crown'." },
+      { currency: "Krone (NOK)", symbol: "kr", code: "NOK", countries: ["NOR"], info: "Northern European currency introduced during a 19th-century monetary union." },
+      { currency: "Krone (DKK)", symbol: "kr", code: "DKK", countries: ["DNK"], info: "Nordic currency tied to European central exchange mechanisms." },
+      { currency: "Dollar (NZD)", symbol: "NZ$", code: "NZD", countries: ["NZL"], info: "Pacific island currency featuring endemic wildlife on polymer notes." },
+      { currency: "Dollar (SGD)", symbol: "S$", code: "SGD", countries: ["SGP"], info: "Island city-state currency managed by a trade-weighted basket." },
+      { currency: "Lira", symbol: "₺", code: "TRY", countries: ["TUR"], info: "Eurasian currency symbolized by the unique ₺ character." },
+      { currency: "Riyal", symbol: "﷼", code: "SAR", countries: ["SAU"], info: "Middle Eastern currency pegged to fixed international monetary values." },
+      { currency: "Dirham", symbol: "AED", code: "AED", countries: ["ARE"], info: "Gulf currency derived from the ancient Greek drachma." },
+      { currency: "Pound (EGP)", symbol: "E£", code: "EGP", countries: ["EGY"], info: "North African currency divided into 100 piastres." },
+      { currency: "Naira", symbol: "₦", code: "NGN", countries: ["NGA"], info: "Sub-Saharan African currency introduced in 1973 to replace colonial pounds." },
+      { currency: "Peso (ARS)", symbol: "$", code: "ARS", countries: ["ARG"], info: "Southern Cone currency with a rich history of monetary reforms." },
+      { currency: "Peso (CLP)", symbol: "$", code: "CLP", countries: ["CHL"], info: "Andean currency featuring famous national poets on banknotes." },
+      { currency: "Peso (COP)", symbol: "$", code: "COP", countries: ["COL"], info: "South American currency depicting local biodiversity and heritage." },
+      { currency: "Sol", symbol: "S/", code: "PEN", countries: ["PER"], info: "Currency whose name derives from the Latin word for 'sun'." },
+      { currency: "Rupiah", symbol: "Rp", code: "IDR", countries: ["IDN"], info: "Archipelagic nation currency named after the Sanskrit word for silver." },
+      { currency: "Ringgit", symbol: "RM", code: "MYR", countries: ["MYS"], info: "Currency whose name means 'jagged' referring to serrated historical coins." },
+      { currency: "Peso (PHP)", symbol: "₱", code: "PHP", countries: ["PHL"], info: "Archipelago currency printed using native plant fiber polymer composite." },
+      { currency: "Dong", symbol: "₫", code: "VND", countries: ["VNM"], info: "Southeast Asian currency whose name literally translates to 'copper money'." },
+      { currency: "Zloty", symbol: "zł", code: "PLN", countries: ["POL"], info: "Central European currency whose name literally translates to 'golden'." },
+      { currency: "Koruna", symbol: "Kč", code: "CZK", countries: ["CZE"], info: "Central European crown currency created after peaceful state dissolution." },
+      { currency: "Forint", symbol: "Ft", code: "HUF", countries: ["HUN"], info: "Central European currency named after famous gold coins of Florence." },
+      { currency: "Shekel", symbol: "₪", code: "ILS", countries: ["ISR"], info: "Ancient Middle Eastern unit of weight revived for modern currency." },
+      { currency: "Shilling", symbol: "KSh", code: "KES", countries: ["KEN"], info: "East African currency featuring iconic savanna wildlife on banknotes." },
+      { currency: "CFA Franc (XOF)", symbol: "CFA", code: "XOF", countries: ["BEN", "BFA", "CIV", "GNB", "MLI", "NER", "SEN", "TGO"], info: "Regional currency used across 8 West African nations." }
+    ];
+
+    function renderPayoutSidebar() {
+      const container = document.getElementById('sidebar-container');
+      if (!container || !targetPayoutCurrency) return;
+
+      let historyHtml = '';
+      if (payoutGuesses.length > 0) {
+        historyHtml = `
+          <div class="pt-1">
+            <div class="text-[9px] uppercase font-bold text-slate-400 mb-1">Wrong Guesses:</div>
+            <div class="flex flex-wrap gap-1">
+              ${payoutGuesses.map(g => `<span class="px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 text-[10px] line-through">${g}</span>`).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="glass-card p-3 rounded-xl border border-emerald-500/40 text-xs shadow-md animate-fade-in space-y-2.5 pointer-events-auto">
+          <div class="flex items-center justify-between">
+            <div class="font-bold text-emerald-300 flex items-center space-x-1.5">
+              <i class="fa-solid fa-money-bill-wave text-emerald-400 text-sm"></i>
+              <span>Payout</span>
+            </div>
+            <span class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-mono font-bold">
+              ${payoutGuessesLeft} / 3 Tries Left
+            </span>
+          </div>
+
+          <!-- Currency Target Card -->
+          <div class="glass-card p-2.5 rounded-lg border border-emerald-500/30 bg-slate-900/80 space-y-1">
+            <div class="text-[9px] uppercase font-bold text-amber-400 tracking-wider flex items-center justify-between">
+              <span>Target Currency</span>
+              <span class="font-mono font-black text-xs text-emerald-300 bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/40">${targetPayoutCurrency.code} (${targetPayoutCurrency.symbol})</span>
+            </div>
+            <div class="text-sm font-black text-white leading-tight">
+              "${targetPayoutCurrency.currency}"
+            </div>
+            <div class="text-[10px] text-slate-300 pt-0.5 leading-relaxed italic">
+              ${targetPayoutCurrency.info}
+            </div>
+          </div>
+
+          <!-- Hint Toggle -->
+          ${!isPayoutHintRevealed ? `
+            <button onclick="togglePayoutHint()" class="w-full py-1.5 px-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold flex items-center justify-center space-x-1.5 transition cursor-pointer">
+              <i class="fa-solid fa-lightbulb text-amber-400"></i>
+              <span>Reveal Region Hint</span>
+            </button>
+          ` : `
+            <div class="glass-card p-2 rounded-lg border border-emerald-500/30 bg-slate-900/80 text-[10px] text-slate-300 space-y-1 animate-fade-in">
+              <div class="flex items-center justify-between text-emerald-300 font-bold mb-1">
+                <span><i class="fa-solid fa-lightbulb text-amber-400 mr-1"></i>Region Clue</span>
+                <button onclick="togglePayoutHint()" class="text-slate-400 hover:text-white text-[9px] underline cursor-pointer">
+                  <i class="fa-solid fa-eye-slash mr-0.5"></i>Hide
+                </button>
+              </div>
+              <div><i class="fa-solid fa-coins text-amber-400 mr-1"></i>Symbol: <strong class="text-white">${targetPayoutCurrency.symbol}</strong></div>
+              <div><i class="fa-solid fa-earth-americas text-teal-400 mr-1"></i>Valid Main Nations: <strong class="text-emerald-300 font-mono">${targetPayoutCurrency.countries.length} Country(ies)</strong></div>
+            </div>
+          `}
+
+          <div class="text-[11px] text-slate-300 space-y-1">
+            ${!gameOver ? `
+              <div class="flex items-center space-x-1.5 text-amber-300 font-semibold">
+                <i class="fa-solid fa-hand-pointer animate-bounce"></i>
+                <span>Click a country using this as MAIN currency & Lock In!</span>
+              </div>
+            ` : `
+              <div class="glass-card p-2 rounded-lg border ${gameWon ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300' : 'border-red-500/50 bg-red-950/40 text-red-300'} text-xs font-bold text-center">
+                ${gameWon ? `Payout Complete! Target was <strong>${targetPayoutCurrency.currency}</strong>!` : `Game Over! Target currency was <strong>${targetPayoutCurrency.currency}</strong>.`}
+              </div>
+            `}
+          </div>
+
+          ${historyHtml}
+        </div>
+      `;
+    }
 
     // Country Link Mode State Variables
     let adjacencyGraph = new Map(); // ISO3 -> Set of ISO3s
@@ -1647,6 +2984,58 @@
           <div class="flex items-center space-x-1">
             <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block shadow"></span>
             <span class="font-semibold text-rose-300">Origin</span>
+          </div>
+        `;
+      } else if (gameMode === 'payout') {
+        legendDiv.innerHTML = `
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow"></span>
+            <span class="font-semibold text-amber-300">Selected</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
+            <span class="font-semibold text-red-300">Wrong</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow"></span>
+            <span class="font-semibold text-emerald-300">Main User Country</span>
+          </div>
+        `;
+      } else if (gameMode === 'languages') {
+        legendDiv.innerHTML = `
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow"></span>
+            <span class="font-semibold text-amber-300">Selected</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
+            <span class="font-semibold text-red-300">Wrong</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-sky-400 inline-block shadow"></span>
+            <span class="font-semibold text-sky-300">Main Speaker Country</span>
+          </div>
+        `;
+      } else if (gameMode === 'empires') {
+        legendDiv.innerHTML = `
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow"></span>
+            <span class="font-semibold text-amber-300">Selected</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
+            <span class="font-semibold text-red-300">Wrong</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block shadow"></span>
+            <span class="font-semibold text-amber-300">Empire Territory</span>
+          </div>
+        `;
+      } else if (gameMode === 'infection') {
+        legendDiv.innerHTML = `
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow"></span>
+            <span class="font-semibold text-emerald-300">Outbreak Country</span>
           </div>
         `;
       } else if (gameMode === 'guesser') {
@@ -3509,6 +4898,74 @@
         }
 
         renderSecondsSidebar();
+      } else if (gameMode === 'payout') {
+        payoutGuessesLeft = 3;
+        payoutGuesses = [];
+        isPayoutHintRevealed = false;
+
+        const randIdx = Math.floor(Math.random() * PAYOUT_DATABASE.length);
+        targetPayoutCurrency = PAYOUT_DATABASE[randIdx];
+
+        if (worldGlobe) {
+          worldGlobe.htmlElementsData([]);
+          worldGlobe.pointsData([]);
+        }
+
+        renderPayoutSidebar();
+      } else if (gameMode === 'languages') {
+        languagesGuessesLeft = 3;
+        languagesGuesses = [];
+        isLanguagesHintRevealed = false;
+
+        const randIdx = Math.floor(Math.random() * LANGUAGES_DATABASE.length);
+        targetLanguage = LANGUAGES_DATABASE[randIdx];
+
+        if (worldGlobe) {
+          worldGlobe.htmlElementsData([]);
+          worldGlobe.pointsData([]);
+        }
+
+        renderLanguagesSidebar();
+      } else if (gameMode === 'empires') {
+        empiresGuessesLeft = 3;
+        empiresGuesses = [];
+        isEmpiresHintRevealed = false;
+
+        const randIdx = Math.floor(Math.random() * EMPIRES_DATABASE.length);
+        targetEmpire = EMPIRES_DATABASE[randIdx];
+
+        if (worldGlobe) {
+          worldGlobe.htmlElementsData([]);
+          worldGlobe.pointsData([]);
+        }
+
+        renderEmpiresSidebar();
+      } else if (gameMode === 'infection') {
+        infectionGuessesLeft = 6;
+        infectionGuesses = [];
+        infectionClueIndex = 1;
+
+        if (!remainingInfectionIndices || remainingInfectionIndices.length === 0) {
+          remainingInfectionIndices = INFECTION_DATABASE.map((_, i) => i);
+        }
+        const randPos = Math.floor(Math.random() * remainingInfectionIndices.length);
+        const infIdx = remainingInfectionIndices.splice(randPos, 1)[0];
+        targetInfection = INFECTION_DATABASE[infIdx];
+
+        if (worldGlobe) {
+          worldGlobe.htmlElementsData([]);
+          worldGlobe.pointsData([]);
+          if (targetInfection && targetInfection.countries.length > 0) {
+            const firstIso = targetInfection.countries[0];
+            const firstFeat = geoData.find(f => getCountryIso3(f) === firstIso);
+            if (firstFeat) {
+              const center = getFeatureCentroid(firstFeat);
+              worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 2.2 }, 1200);
+            }
+          }
+        }
+
+        renderInfectionSidebar();
       } else if (gameMode === 'dontapply') {
         dontApplyRoundIndex = 0;
         dontApplyStrikesLeft = 5;
@@ -3998,6 +5455,32 @@
               if (d === selectedFeature) return 'rgba(245, 158, 11, 0.95)';
               if (wrongGuesses.has(d)) return 'rgba(239, 68, 68, 0.85)';
               if (gameOver && d === targetCountryFeature) return 'rgba(16, 185, 129, 0.95)';
+              return 'rgba(30, 41, 59, 0.85)';
+            }
+
+            if (gameMode === 'payout') {
+              if (d === selectedFeature) return 'rgba(245, 158, 11, 0.95)';
+              if (wrongGuesses.has(d)) return 'rgba(239, 68, 68, 0.85)';
+              if (gameOver && targetPayoutCurrency && targetPayoutCurrency.countries.includes(getCountryIso3(d))) return 'rgba(16, 185, 129, 0.95)';
+              return 'rgba(30, 41, 59, 0.85)';
+            }
+
+            if (gameMode === 'languages') {
+              if (d === selectedFeature) return 'rgba(245, 158, 11, 0.95)';
+              if (wrongGuesses.has(d)) return 'rgba(239, 68, 68, 0.85)';
+              if (gameOver && targetLanguage && targetLanguage.countries.includes(getCountryIso3(d))) return 'rgba(56, 189, 248, 0.95)';
+              return 'rgba(30, 41, 59, 0.85)';
+            }
+
+            if (gameMode === 'empires') {
+              if (d === selectedFeature) return 'rgba(245, 158, 11, 0.95)';
+              if (wrongGuesses.has(d)) return 'rgba(239, 68, 68, 0.85)';
+              if (gameOver && targetEmpire && targetEmpire.countries.includes(getCountryIso3(d))) return 'rgba(245, 158, 11, 0.95)';
+              return 'rgba(30, 41, 59, 0.85)';
+            }
+
+            if (gameMode === 'infection') {
+              if (targetInfection && targetInfection.countries.includes(getCountryIso3(d))) return 'rgba(34, 197, 94, 0.9)';
               return 'rgba(30, 41, 59, 0.85)';
             }
 
@@ -4557,6 +6040,264 @@
               }
             }
 
+            if (gameMode === 'payout') {
+              if (!selectedFeature || !targetPayoutCurrency) return;
+
+              const selIso = getCountryIso3(selectedFeature);
+              const selName = getFeatureName(selectedFeature);
+              const isCorrect = targetPayoutCurrency.countries.includes(selIso);
+
+              if (isCorrect) {
+                gameOver = true;
+                gameWon = true;
+                sounds.playWin();
+
+                if (worldGlobe) {
+                  const center = getFeatureCentroid(selectedFeature);
+                  worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.5 }, 1200);
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                }
+
+                if (window.confetti) confetti({ particleCount: 110, spread: 70, origin: { y: 0.6 } });
+
+                showFeedbackToast(`<i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Payout Complete! <strong>${selName}</strong> uses <strong>${targetPayoutCurrency.currency}</strong> as its main currency!`, 'win');
+
+                const winTextContainer = document.getElementById('win-text-container');
+                if (winTextContainer) {
+                  winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-emerald-400 border border-emerald-500/50 shadow-2xl flex items-center space-x-2";
+                  winTextContainer.innerHTML = `<span><i class="fa-solid fa-money-bill-wave text-emerald-400 mr-1"></i> Correct! ${selName} uses <strong class="underline font-bold">${targetPayoutCurrency.currency}</strong> as main currency!</span>`;
+                }
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                renderPayoutSidebar();
+                revealPlayAnother();
+                return;
+
+              } else {
+                sounds.playWrong();
+                wrongGuesses.add(selectedFeature);
+                payoutGuesses.push(selName);
+                payoutGuessesLeft--;
+                selectedFeature = null;
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                if (payoutGuessesLeft > 0) {
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! ${selName} does not use ${targetPayoutCurrency.currency} as its main currency. (${payoutGuessesLeft} tries left)`, 'wrong');
+                  renderPayoutSidebar();
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                } else {
+                  gameOver = true;
+                  gameWon = false;
+
+                  if (worldGlobe && targetPayoutCurrency.countries.length > 0) {
+                    const firstMatchIso = targetPayoutCurrency.countries[0];
+                    const firstMatchFeat = geoData.find(f => getCountryIso3(f) === firstMatchIso);
+                    if (firstMatchFeat) {
+                      const center = getFeatureCentroid(firstMatchFeat);
+                      worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.5 }, 1200);
+                    }
+                    worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                  }
+
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of tries! Main users for <strong>${targetPayoutCurrency.currency}</strong> highlighted on globe.`, 'wrong');
+
+                  const winTextContainer = document.getElementById('win-text-container');
+                  if (winTextContainer) {
+                    winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
+                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-money-bill-wave text-emerald-400 mr-1"></i> Out of tries! Target currency was <strong class="underline font-bold">${targetPayoutCurrency.currency}</strong></span>`;
+                  }
+
+                  renderPayoutSidebar();
+                  revealPlayAnother();
+                }
+                return;
+              }
+            }
+
+            if (gameMode === 'languages') {
+              if (!selectedFeature || !targetLanguage) return;
+
+              const selIso = getCountryIso3(selectedFeature);
+              const selName = getFeatureName(selectedFeature);
+              const isCorrect = targetLanguage.countries.includes(selIso);
+
+              if (isCorrect) {
+                gameOver = true;
+                gameWon = true;
+                sounds.playWin();
+
+                if (worldGlobe) {
+                  const center = getFeatureCentroid(selectedFeature);
+                  worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.5 }, 1200);
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                }
+
+                if (window.confetti) confetti({ particleCount: 110, spread: 70, origin: { y: 0.6 } });
+
+                showFeedbackToast(`<i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Match Complete! <strong>${selName}</strong> uses <strong>${targetLanguage.name}</strong> as its main language!`, 'win');
+
+                const winTextContainer = document.getElementById('win-text-container');
+                if (winTextContainer) {
+                  winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-sky-300 border border-sky-500/50 shadow-2xl flex items-center space-x-2";
+                  winTextContainer.innerHTML = `<span><i class="fa-solid fa-language text-sky-400 mr-1"></i> Correct! ${selName} speaks <strong class="underline font-bold">${targetLanguage.name}</strong> as a main language!</span>`;
+                }
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                renderLanguagesSidebar();
+                revealPlayAnother();
+                return;
+
+              } else {
+                sounds.playWrong();
+                wrongGuesses.add(selectedFeature);
+                languagesGuesses.push(selName);
+                languagesGuessesLeft--;
+                selectedFeature = null;
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                if (languagesGuessesLeft > 0) {
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! ${selName} does not use ${targetLanguage.name} as its main language. (${languagesGuessesLeft} tries left)`, 'wrong');
+                  renderLanguagesSidebar();
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                } else {
+                  gameOver = true;
+                  gameWon = false;
+
+                  if (worldGlobe && targetLanguage.countries.length > 0) {
+                    const firstMatchIso = targetLanguage.countries[0];
+                    const firstMatchFeat = geoData.find(f => getCountryIso3(f) === firstMatchIso);
+                    if (firstMatchFeat) {
+                      const center = getFeatureCentroid(firstMatchFeat);
+                      worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.5 }, 1200);
+                    }
+                    worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                  }
+
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of tries! Main speaker nations for <strong>${targetLanguage.name}</strong> highlighted on globe.`, 'wrong');
+
+                  const winTextContainer = document.getElementById('win-text-container');
+                  if (winTextContainer) {
+                    winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
+                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-language text-sky-400 mr-1"></i> Out of tries! Target language was <strong class="underline font-bold">${targetLanguage.name}</strong></span>`;
+                  }
+
+                  renderLanguagesSidebar();
+                  revealPlayAnother();
+                }
+                return;
+              }
+            }
+
+            if (gameMode === 'empires') {
+              if (!selectedFeature || !targetEmpire) return;
+
+              const selIso = getCountryIso3(selectedFeature);
+              const selName = getFeatureName(selectedFeature);
+              const isCorrect = targetEmpire.countries.includes(selIso);
+
+              if (isCorrect) {
+                gameOver = true;
+                gameWon = true;
+                sounds.playWin();
+
+                if (worldGlobe) {
+                  const center = getFeatureCentroid(selectedFeature);
+                  worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.5 }, 1200);
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                }
+
+                if (window.confetti) confetti({ particleCount: 110, spread: 70, origin: { y: 0.6 } });
+
+                showFeedbackToast(`<i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Empire Territory Matched! <strong>${selName}</strong> was part of the <strong>${targetEmpire.name}</strong>!`, 'win');
+
+                const winTextContainer = document.getElementById('win-text-container');
+                if (winTextContainer) {
+                  winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-amber-300 border border-amber-500/50 shadow-2xl flex items-center space-x-2";
+                  winTextContainer.innerHTML = `<span><i class="fa-solid fa-crown text-amber-400 mr-1"></i> Correct! ${selName} was territory of the <strong class="underline font-bold">${targetEmpire.name}</strong>!</span>`;
+                }
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                renderEmpiresSidebar();
+                revealPlayAnother();
+                return;
+
+              } else {
+                sounds.playWrong();
+                wrongGuesses.add(selectedFeature);
+                empiresGuesses.push(selName);
+                empiresGuessesLeft--;
+                selectedFeature = null;
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                if (empiresGuessesLeft > 0) {
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! ${selName} was not part of the ${targetEmpire.name}. (${empiresGuessesLeft} tries left)`, 'wrong');
+                  renderEmpiresSidebar();
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                } else {
+                  gameOver = true;
+                  gameWon = false;
+
+                  if (worldGlobe && targetEmpire.countries.length > 0) {
+                    const firstMatchIso = targetEmpire.countries[0];
+                    const firstMatchFeat = geoData.find(f => getCountryIso3(f) === firstMatchIso);
+                    if (firstMatchFeat) {
+                      const center = getFeatureCentroid(firstMatchFeat);
+                      worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.5 }, 1200);
+                    }
+                    worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                  }
+
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of tries! Modern territories of the <strong>${targetEmpire.name}</strong> highlighted on globe.`, 'wrong');
+
+                  const winTextContainer = document.getElementById('win-text-container');
+                  if (winTextContainer) {
+                    winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
+                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-crown text-amber-400 mr-1"></i> Out of tries! Target empire was <strong class="underline font-bold">${targetEmpire.name}</strong></span>`;
+                  }
+
+                  renderEmpiresSidebar();
+                  revealPlayAnother();
+                }
+                return;
+              }
+            }
+
             if (gameMode === 'flagged') {
               if (!selectedFeature || !targetCountryFeature) return;
 
@@ -4898,6 +6639,10 @@
       const btnTimeZoner = document.getElementById('mode-timezoner');
       const btnHigherLower = document.getElementById('mode-higherlower');
       const btnSeconds = document.getElementById('mode-seconds');
+      const btnPayout = document.getElementById('mode-payout');
+      const btnLanguages = document.getElementById('mode-languages');
+      const btnEmpires = document.getElementById('mode-empires');
+      const btnInfection = document.getElementById('mode-infection');
 
       if (modeBtn && modeMenu) {
         modeBtn.addEventListener('click', (e) => {
@@ -4912,12 +6657,12 @@
         });
 
         const resetMenuStyles = () => {
-          [btnGuesser, btnHotCold, btnTrivia, btnImpact, btnSpeedState, btnChained, btnFlagged, btnDontApply, btnCountryLink, btnLandmarker, btnTimeZoner, btnHigherLower, btnSeconds].forEach(btn => {
+          [btnGuesser, btnHotCold, btnTrivia, btnImpact, btnSpeedState, btnChained, btnFlagged, btnDontApply, btnCountryLink, btnLandmarker, btnTimeZoner, btnHigherLower, btnSeconds, btnPayout, btnLanguages, btnEmpires, btnInfection].forEach(btn => {
             if (btn) btn.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
           });
         };
 
-        if (btnGuesser && btnHotCold && btnTrivia && btnImpact && btnSpeedState && btnChained && btnFlagged && btnDontApply && btnCountryLink && btnLandmarker && btnTimeZoner && btnHigherLower && btnSeconds) {
+        if (btnGuesser && btnHotCold && btnTrivia && btnImpact && btnSpeedState && btnChained && btnFlagged && btnDontApply && btnCountryLink && btnLandmarker && btnTimeZoner && btnHigherLower && btnSeconds && btnPayout && btnLanguages && btnEmpires && btnInfection) {
           btnGuesser.addEventListener('click', () => {
             if (gameMode === 'guesser') { modeMenu.classList.add('hidden'); return; }
             gameMode = 'guesser';
@@ -5045,6 +6790,47 @@
             if (modeBadge) modeBadge.textContent = "Seconds";
             resetMenuStyles();
             btnSeconds.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-rose-300 bg-rose-950/40 mt-1";
+            modeMenu.classList.add('hidden');
+            startNewRound();
+          });
+
+          btnPayout.addEventListener('click', () => {
+            if (gameMode === 'payout') { modeMenu.classList.add('hidden'); return; }
+            gameMode = 'payout';
+            if (modeBadge) modeBadge.textContent = "Payout";
+            resetMenuStyles();
+            btnPayout.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-emerald-300 bg-emerald-950/40 mt-1";
+            modeMenu.classList.add('hidden');
+            startNewRound();
+          });
+
+          btnLanguages.addEventListener('click', () => {
+            if (gameMode === 'languages') { modeMenu.classList.add('hidden'); return; }
+            gameMode = 'languages';
+            if (modeBadge) modeBadge.textContent = "Languages";
+            resetMenuStyles();
+            btnLanguages.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-sky-300 bg-sky-950/40 mt-1";
+            modeMenu.classList.add('hidden');
+            startNewRound();
+          });
+
+          btnEmpires.addEventListener('click', () => {
+            if (gameMode === 'empires') { modeMenu.classList.add('hidden'); return; }
+            gameMode = 'empires';
+            if (modeBadge) modeBadge.textContent = "Ancient Empires";
+            resetMenuStyles();
+            btnEmpires.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-amber-300 bg-slate-800/50 mt-1";
+            modeMenu.classList.add('hidden');
+            startNewRound();
+          });
+
+          btnInfection.addEventListener('click', () => {
+            if (gameMode === 'infection') { modeMenu.classList.add('hidden'); return; }
+            gameMode = 'infection';
+            remainingInfectionIndices = [];
+            if (modeBadge) modeBadge.textContent = "Infection";
+            resetMenuStyles();
+            btnInfection.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-emerald-300 bg-emerald-950/40 mt-1";
             modeMenu.classList.add('hidden');
             startNewRound();
           });
