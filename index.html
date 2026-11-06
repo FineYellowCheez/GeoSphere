@@ -2394,9 +2394,87 @@
     const CURATED_TRIVIA_DATABASE = {
       "USA": [
         "Which country is home to the Grand Canyon, Yellowstone, and 50 federal states?",
-        "Which nation has Washington, D.C. as its official capital city?",
         "Which country's film industry is globally centered in Hollywood, California?",
-        "Which nation uses the country-code internet domain extension '.us'?"
+        "Which nation uses the country-code internet domain extension '.us' and features the Statue of Liberty?",
+        "Which North American country drives on the right and is home to NASA space centers?"
+      ],
+      "FRA": [
+        "Which Western European country is famous for the Eiffel Tower, Mont Saint-Michel, and the Louvre?",
+        "Which nation borders both the Atlantic Ocean and the Mediterranean Sea in Western Europe?",
+        "Which European country is world-renowned for Champagne, Bordeaux wine, and high fashion?",
+        "Which nation uses the '.fr' web extension and features a blue, white, and red vertical tricolor flag?"
+      ],
+      "DEU": [
+        "Which Central European country is famous for the Autobahn, Oktoberfest, and Neuschwanstein Castle?",
+        "Which nation is Europe's largest national economy and home to carmakers like BMW and Mercedes-Benz?",
+        "Which European country borders Denmark to the north and Switzerland to the south?",
+        "Which nation features a black, red, and gold horizontal tricolor flag?"
+      ],
+      "JPN": [
+        "Which East Asian island nation is famous for Mount Fuji, bullet trains (Shinkansen), and cherry blossoms?",
+        "Which archipelago country invented sushi, anime, and origami?",
+        "Which Asian nation uses the '.jp' domain extension and drives on the left side of the road?",
+        "Which nation's national flag consists of a solid red circle centered on a white background?"
+      ],
+      "BRA": [
+        "Which South American nation is home to the vast Amazon Rainforest and the Amazon River?",
+        "Which country has won 5 FIFA World Cup titles and is famous for the Rio de Janeiro Carnival?",
+        "Which South American country is the world's largest producer and exporter of coffee?",
+        "Which nation features a green flag with a yellow rhombus and a blue celestial globe?"
+      ],
+      "EGY": [
+        "Which North African nation is home to the Great Pyramids of Giza and the Great Sphinx?",
+        "Which country controls the Suez Canal connecting the Mediterranean Sea to the Red Sea?",
+        "Which ancient civilization developed along the fertile banks of the Nile River?",
+        "Which African nation uses the '.eg' domain extension and drives on the right side of the road?"
+      ],
+      "AUS": [
+        "Which continent-country is home to the Great Barrier Reef, Kangaroos, and the Outback?",
+        "Which island nation drives on the left, uses the '.au' domain, and is famous for Sydney Harbour?",
+        "Which country is home to Uluru (Ayers Rock) and the Tasmanian Devil?",
+        "Which nation's flag features the Southern Cross constellation on a deep blue field?"
+      ],
+      "IND": [
+        "Which South Asian country is home to the Taj Mahal, the Ganges River, and the Himalayan foothills?",
+        "Which nation is the world's most populous country and birthplace of Hinduism and Buddhism?",
+        "Which Asian nation drives on the left, uses '.in', and features the Ashoka Chakra on its flag?",
+        "Which country's film industry is popularly known worldwide as Bollywood?"
+      ],
+      "GBR": [
+        "Which island nation in Western Europe is home to Stonehenge, Loch Ness, and Big Ben?",
+        "Which country features the Union Jack flag and drives on the left side of the road?",
+        "Which European country is famous for Wimbledon tennis, Afternoon Tea, and the BBC?",
+        "Which nation uses the '.uk' domain extension and consists of England, Scotland, Wales, and Northern Ireland?"
+      ],
+      "CHN": [
+        "Which East Asian nation constructed the Great Wall and is home to Giant Pandas?",
+        "Which country is famous for the Terracotta Army, the Forbidden City, and the Yangtze River?",
+        "Which Asian nation uses the '.cn' domain extension and features a red flag with 5 golden stars?",
+        "Which nation invented paper, gunpowder, printing, and the magnetic compass?"
+      ],
+      "MEX": [
+        "Which North American country is home to Chichen Itza, ancient Maya pyramids, and mariachi music?",
+        "Which nation is famous for traditional dishes like tacos, tamales, and mole poblano?",
+        "Which country features an eagle perched on a nopal cactus holding a serpent on its flag?",
+        "Which nation shares a northern border with the United States and uses the '.mx' extension?"
+      ],
+      "ITA": [
+        "Which Mediterranean peninsular country is shaped like a boot and home to Mt. Vesuvius and Pompeii?",
+        "Which European nation is the birthplace of the Renaissance, Roman Empire, and Pizza?",
+        "Which country contains the independent enclaves of San Marino and Vatican City?",
+        "Which nation features a green, white, and red vertical tricolor flag and uses the '.it' domain?"
+      ],
+      "CAN": [
+        "Which North American country is the second-largest nation by total land area in the world?",
+        "Which country features a red maple leaf on its national flag and is famous for ice hockey?",
+        "Which nation produces over 70% of the world's maple syrup and uses the '.ca' domain?",
+        "Which country borders three oceans: the Atlantic, Pacific, and Arctic Oceans?"
+      ],
+      "ESP": [
+        "Which Iberian nation is famous for Flamenco dancing, bullfighting traditions, and tapas?",
+        "Which European country is home to Antoni Gaudí's unfinished masterpiece, the Sagrada Família?",
+        "Which nation features a red and yellow horizontal flag and uses the '.es' domain?",
+        "Which country occupies most of the Iberian Peninsula alongside Portugal?"
       ]
     };
 
@@ -2501,10 +2579,13 @@
       }
 
       const fallbackQuestions = [
-        `Which country has the official capital city of ${meta.capital}?`,
-        `Which nation in ${meta.continent} uses the country-code internet domain extension '${meta.tld}'?`,
-        `Which ${meta.subregion} nation starts with the letter '${meta.letter}' and has its capital at ${meta.capital}?`,
-        `Which country in ${meta.subregion} has a population bracket of ${meta.popTier} and uses the domain extension '${meta.tld}'?`
+        `Which nation in ${meta.continent} drives on the ${meta.drive} side of the road and uses the domain extension '${meta.tld}'?`,
+        `Which ${meta.coast === 'Landlocked' ? 'landlocked country' : 'coastal country'} in ${meta.subregion} starts with the letter '${meta.letter}'?`,
+        `Which country in ${meta.subregion} features ${meta.mainColor} as a primary color in its flag?`,
+        `Which ${meta.continent} nation located in the ${meta.hemisphere} Hemisphere has a population bracket of ${meta.popTier}?`,
+        `Which nation in ${meta.subregion} has a name that is exactly ${meta.nameLength} letters long?`,
+        `Which ${meta.coast} nation drives on the ${meta.drive} side of the road and uses the internet TLD '${meta.tld}'?`,
+        `Which country in ${meta.subregion} has an estimated population tier of ${meta.popTier} and starts with '${meta.letter}'?`
       ];
 
       for (let fq of fallbackQuestions) {
@@ -5311,7 +5392,7 @@
               worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.8 }, 1200);
             }
 
-            if (!gameOver && ['guesser', 'hotcold', 'trivia', 'speedstate', 'flagged', 'dontapply', 'landmarker'].includes(gameMode)) {
+            if (!gameOver) {
               selectCountryAndRotate(feat, true);
             }
           });
