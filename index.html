@@ -1629,6 +1629,15 @@
         `;
       }
 
+      let correctCountriesStr = "";
+      if (gameOver && targetPayoutCurrency.countries) {
+        const names = targetPayoutCurrency.countries.map(iso => {
+          const f = geoData.find(feat => getCountryIso3(feat) === iso);
+          return f ? getFeatureName(f) : iso;
+        });
+        correctCountriesStr = names.join(", ");
+      }
+
       container.innerHTML = `
         <div class="glass-card p-3 rounded-xl border border-emerald-500/40 text-xs shadow-md animate-fade-in space-y-2.5 pointer-events-auto">
           <div class="flex items-center justify-between">
@@ -1681,8 +1690,14 @@
                 <span>Click a country using this as MAIN currency & Lock In!</span>
               </div>
             ` : `
-              <div class="glass-card p-2 rounded-lg border ${gameWon ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300' : 'border-red-500/50 bg-red-950/40 text-red-300'} text-xs font-bold text-center">
-                ${gameWon ? `Payout Complete! Target was <strong>${targetPayoutCurrency.currency}</strong>!` : `Game Over! Target currency was <strong>${targetPayoutCurrency.currency}</strong>.`}
+              <div class="glass-card p-2 rounded-lg border ${gameWon ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300' : 'border-red-500/50 bg-red-950/40 text-red-300'} text-xs font-bold text-center space-y-1">
+                ${gameWon ? `Payout Complete! Target was <strong>${targetPayoutCurrency.currency}</strong>!` : `
+                  <div>Game Over! Out of tries for <strong>${targetPayoutCurrency.currency}</strong>.</div>
+                  <div class="text-[10px] text-slate-300 pt-1 border-t border-red-500/30">
+                    <span class="text-amber-300 font-bold block mb-0.5">Valid Country/Countries:</span>
+                    <span class="text-white font-semibold block max-h-20 overflow-y-auto font-mono">${correctCountriesStr}</span>
+                  </div>
+                `}
               </div>
             `}
           </div>
@@ -6101,6 +6116,15 @@
                   gameOver = true;
                   gameWon = false;
 
+                  const correctNames = targetPayoutCurrency.countries.map(iso => {
+                    const f = geoData.find(feat => getCountryIso3(feat) === iso);
+                    return f ? getFeatureName(f) : iso;
+                  });
+                  const correctCountriesStr = correctNames.join(", ");
+                  const bannerStr = correctNames.length > 3 
+                    ? `${correctNames.slice(0, 3).join(', ')} (+${correctNames.length - 3} more)`
+                    : correctCountriesStr;
+
                   if (worldGlobe && targetPayoutCurrency.countries.length > 0) {
                     const firstMatchIso = targetPayoutCurrency.countries[0];
                     const firstMatchFeat = geoData.find(f => getCountryIso3(f) === firstMatchIso);
@@ -6111,12 +6135,12 @@
                     worldGlobe.polygonsData(getPolygonsForCurrentMode());
                   }
 
-                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of tries! Main users for <strong>${targetPayoutCurrency.currency}</strong> highlighted on globe.`, 'wrong');
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of tries! Correct country/countries: <strong>${bannerStr}</strong>`, 'wrong');
 
                   const winTextContainer = document.getElementById('win-text-container');
                   if (winTextContainer) {
                     winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
-                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-money-bill-wave text-emerald-400 mr-1"></i> Out of tries! Target currency was <strong class="underline font-bold">${targetPayoutCurrency.currency}</strong></span>`;
+                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-money-bill-wave text-emerald-400 mr-1"></i> Out of tries! Correct: <strong class="underline font-bold">${bannerStr}</strong></span>`;
                   }
 
                   renderPayoutSidebar();
