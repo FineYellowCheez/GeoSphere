@@ -114,14 +114,21 @@
           <button id="mode-dropdown-btn" class="glass-card px-3 py-1.5 rounded-xl flex items-center space-x-2 text-xs font-black text-amber-400 tracking-wider shadow-md hover:border-amber-500/50 transition cursor-pointer">
             <i class="fa-solid fa-earth-americas text-emerald-400 text-sm"></i>
             <span class="bg-gradient-to-r from-amber-300 via-emerald-300 to-teal-200 bg-clip-text text-transparent uppercase tracking-widest font-extrabold">GeoSphere</span>
-            <span id="current-mode-badge" class="ml-1 px-1.5 py-0.5 text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-md font-semibold">Country Guesser</span>
+            <span id="current-mode-badge" class="ml-1 px-1.5 py-0.5 text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-md font-semibold">Main Menu</span>
             <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
           </button>
           
           <!-- Game Mode Selection Dropdown Menu -->
           <div id="mode-menu" class="absolute top-full left-0 mt-2 w-56 glass-panel rounded-xl shadow-2xl p-1.5 hidden border border-slate-700/80 z-50 max-h-[70vh] overflow-y-auto">
             <div class="text-[10px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">Select Game Mode</div>
-            <button id="mode-guesser" class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-amber-300 bg-slate-800/50">
+            <button id="mode-mainmenu" class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-amber-300 bg-slate-800/50">
+              <i class="fa-solid fa-house text-amber-400 text-sm"></i>
+              <div>
+                <div>Main Menu</div>
+                <div class="text-[10px] font-normal text-slate-400">3D Globe Showcase</div>
+              </div>
+            </button>
+            <button id="mode-guesser" class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1">
               <i class="fa-solid fa-lightbulb text-amber-400 text-sm"></i>
               <div>
                 <div>Country Guesser</div>
@@ -381,7 +388,80 @@
     let redCascadeInterval = null;
     let gameOver = false;
     let gameWon = false;
-    let gameMode = 'guesser'; // 'guesser', 'hotcold', 'trivia', 'impact', 'speedstate', 'chained', 'flagged', 'dontapply', 'landmarker', 'countrylink', 'timezoner', 'payout', 'languages', 'empires', 'infection'
+    let gameMode = 'mainmenu'; // 'mainmenu', 'guesser', 'hotcold', 'trivia', 'impact', 'speedstate', 'chained', 'flagged', 'dontapply', 'landmarker', 'countrylink', 'timezoner', 'payout', 'languages', 'empires', 'infection'
+    let mainMenuCountryColors = new Map();
+
+    function renderMainMenuSidebar() {
+      const container = document.getElementById('sidebar-container');
+      if (!container) return;
+
+      container.innerHTML = `
+        <div class="glass-card p-3.5 rounded-xl border border-amber-500/40 text-xs shadow-xl animate-fade-in space-y-3 pointer-events-auto">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-earth-americas text-emerald-400 text-lg"></i>
+            <div>
+              <div class="text-sm font-black bg-gradient-to-r from-amber-300 via-emerald-300 to-teal-200 bg-clip-text text-transparent uppercase tracking-wider">GEOSPHERE</div>
+              <div class="text-[10px] text-slate-400 font-semibold">3D World Exploration & Mystery</div>
+            </div>
+          </div>
+
+          <div class="glass-card p-2.5 rounded-lg border border-slate-700/60 bg-slate-900/80 space-y-2 text-[11px] text-slate-200">
+            <div class="font-extrabold text-amber-400 text-[10px] uppercase tracking-wider flex items-center space-x-1">
+              <i class="fa-solid fa-compass"></i>
+              <span>How to Navigate</span>
+            </div>
+            
+            <div class="flex items-start space-x-2">
+              <i class="fa-solid fa-list-check text-amber-400 text-xs mt-0.5 shrink-0"></i>
+              <div>
+                <strong class="text-white block">Select Game Mode</strong>
+                Use the top-left <span class="text-amber-300 font-bold">GeoSphere</span> dropdown menu to choose from 18 game modes!
+              </div>
+            </div>
+
+            <div class="flex items-start space-x-2">
+              <i class="fa-solid fa-arrows-spin text-teal-400 text-xs mt-0.5 shrink-0"></i>
+              <div>
+                <strong class="text-white block">Rotate & Zoom Globe</strong>
+                Click and drag to spin the 3D globe. Scroll to zoom into countries.
+              </div>
+            </div>
+
+            <div class="flex items-start space-x-2">
+              <i class="fa-solid fa-hand-pointer text-emerald-400 text-xs mt-0.5 shrink-0"></i>
+              <div>
+                <strong class="text-white block">Make Predictions</strong>
+                Click countries on the globe or type in search to lock in your answers during active games.
+              </div>
+            </div>
+          </div>
+
+          <div class="text-[10px] text-slate-400 text-center italic">
+            Select a game mode from the dropdown above to start playing!
+          </div>
+        </div>
+      `;
+    }
+
+    function generateMainMenuColors() {
+      mainMenuCountryColors.clear();
+      if (!geoData || geoData.length === 0) return;
+      const vibrantColors = [
+        'rgba(239, 68, 68, 0.9)',   // red
+        'rgba(245, 158, 11, 0.9)',  // amber
+        'rgba(16, 185, 129, 0.9)',  // emerald
+        'rgba(6, 182, 212, 0.9)',   // cyan
+        'rgba(59, 130, 246, 0.9)',  // blue
+        'rgba(139, 92, 246, 0.9)',  // purple
+        'rgba(236, 72, 153, 0.9)'   // pink
+      ];
+      geoData.forEach(f => {
+        if (Math.random() < 0.35) {
+          const color = vibrantColors[Math.floor(Math.random() * vibrantColors.length)];
+          mainMenuCountryColors.set(f, color);
+        }
+      });
+    }
 
     // Ancient Empires Mode State Variables
     let empiresGuessesLeft = 3;
@@ -2511,7 +2591,7 @@
     }
 
     function selectCountryAndRotate(feature, forceZoom = false) {
-      if (gameOver || ['impact', 'chained', 'infection', 'timezoner', 'higherlower'].includes(gameMode)) return;
+      if (gameOver || ['impact', 'chained', 'infection', 'timezoner', 'higherlower', 'mainmenu'].includes(gameMode)) return;
       if (!feature || (feature.properties && feature.properties.isCircle)) return;
       sounds.playSelect();
       selectedFeature = feature;
@@ -2970,6 +3050,11 @@
     function renderLegend() {
       const legendDiv = document.getElementById('globe-legend');
       if (!legendDiv) return;
+
+      if (gameMode === 'mainmenu') {
+        legendDiv.innerHTML = '';
+        return;
+      }
 
       if (gameMode === 'countrylink') {
         legendDiv.innerHTML = `
@@ -4765,6 +4850,20 @@
         btnPlayAnother.style.pointerEvents = 'none';
       }
 
+      if (gameMode === 'mainmenu') {
+        if (worldGlobe && worldGlobe.controls()) {
+          worldGlobe.controls().autoRotate = true;
+          worldGlobe.controls().autoRotateSpeed = 0.8;
+        }
+
+        generateMainMenuColors();
+        renderMainMenuSidebar();
+      } else {
+        if (worldGlobe && worldGlobe.controls()) {
+          worldGlobe.controls().autoRotate = false;
+        }
+      }
+
       if (gameMode === 'chained') {
         if (!remainingChainIndices || remainingChainIndices.length === 0) {
           remainingChainIndices = CHAINED_DATABASE.map((_, i) => i);
@@ -5058,6 +5157,8 @@
         if (gameMode === 'countrylink' && countryLinkStart) {
           const center = getFeatureCentroid(countryLinkStart);
           worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 2.0 }, 1200);
+        } else if (gameMode === 'mainmenu') {
+          worldGlobe.pointOfView({ lat: 15, lng: 0, altitude: 2.5 }, 1200);
         } else {
           worldGlobe.pointOfView({ lat: 20, lng: 0, altitude: 2.2 }, 1200);
         }
@@ -5110,10 +5211,10 @@
 
       if (!inputEl) return;
 
-      if (gameMode === 'speedstate') {
+      if (gameMode === 'speedstate' || gameMode === 'mainmenu') {
         if (strikeEl) strikeEl.classList.remove('hidden');
         inputEl.disabled = true;
-        inputEl.placeholder = 'Search disabled in Speed Mode';
+        inputEl.placeholder = gameMode === 'mainmenu' ? 'Main Menu Mode' : 'Search disabled in Speed Mode';
         inputEl.classList.add('cursor-not-allowed', 'opacity-50');
         if (resultsEl) resultsEl.classList.add('hidden');
         if (clearBtn) clearBtn.classList.add('hidden');
@@ -5425,6 +5526,11 @@
             if (d.properties && d.properties.isGuessCircle) return 'rgba(156, 163, 175, 0.45)';
             if (d.properties && d.properties.isTargetCircle) return 'rgba(16, 185, 129, 0.55)';
 
+            if (gameMode === 'mainmenu') {
+              if (mainMenuCountryColors.has(d)) return mainMenuCountryColors.get(d);
+              return 'rgba(30, 41, 59, 0.85)';
+            }
+
             if (gameMode === 'impact' || gameMode === 'chained') return 'rgba(30, 41, 59, 0.85)';
 
             if (gameMode === 'timezoner') {
@@ -5548,7 +5654,7 @@
             return 0.008;
           })
           .onPolygonClick((feature, event, coords) => {
-            if (gameOver) return;
+            if (gameOver || gameMode === 'mainmenu') return;
 
             if (gameMode === 'speedstate') {
               if (speedStatePhase === 'playing' && !gameOver && feature) {
@@ -5585,6 +5691,7 @@
             if (feature) selectCountryAndRotate(feature, false);
           })
           .onGlobeClick((coords) => {
+            if (gameMode === 'mainmenu') return;
             if (gameMode === 'impact' && !gameOver && coords) {
               if (!isDraggingImpactRadius) {
                 sounds.playSelect();
@@ -6646,239 +6753,65 @@
         setupImpactEdgeDrag();
         startNewRound();
 
-      } catch (err) {
-        console.error("Globe initialization error:", err);
-      }
-
-      const modeBtn = document.getElementById('mode-dropdown-btn');
-      const modeMenu = document.getElementById('mode-menu');
-      const modeBadge = document.getElementById('current-mode-badge');
-      const btnGuesser = document.getElementById('mode-guesser');
-      const btnHotCold = document.getElementById('mode-hotcold');
-      const btnTrivia = document.getElementById('mode-trivia');
-      const btnImpact = document.getElementById('mode-impact');
-      const btnSpeedState = document.getElementById('mode-speedstate');
-      const btnChained = document.getElementById('mode-chained');
-      const btnFlagged = document.getElementById('mode-flagged');
-      const btnDontApply = document.getElementById('mode-dontapply');
-      const btnCountryLink = document.getElementById('mode-countrylink');
-      const btnLandmarker = document.getElementById('mode-landmarker');
-      const btnTimeZoner = document.getElementById('mode-timezoner');
-      const btnHigherLower = document.getElementById('mode-higherlower');
-      const btnSeconds = document.getElementById('mode-seconds');
-      const btnPayout = document.getElementById('mode-payout');
-      const btnLanguages = document.getElementById('mode-languages');
-      const btnEmpires = document.getElementById('mode-empires');
-      const btnInfection = document.getElementById('mode-infection');
-
-      if (modeBtn && modeMenu) {
-        modeBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          modeMenu.classList.toggle('hidden');
-        });
-
-        document.addEventListener('click', (e) => {
-          if (!modeBtn.contains(e.target) && !modeMenu.contains(e.target)) {
+        const modeBtn = document.getElementById('mode-dropdown-btn');
+        const modeMenu = document.getElementById('mode-menu');
+        if (modeBtn && modeMenu) {
+          modeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            modeMenu.classList.toggle('hidden');
+          });
+          document.addEventListener('click', () => {
             modeMenu.classList.add('hidden');
+          });
+        }
+
+        const modes = [
+          'mainmenu', 'guesser', 'hotcold', 'trivia', 'impact', 'speedstate',
+          'chained', 'flagged', 'dontapply', 'countrylink', 'landmarker',
+          'timezoner', 'higherlower', 'seconds', 'payout', 'languages', 'empires', 'infection'
+        ];
+
+        modes.forEach(m => {
+          const btn = document.getElementById(`mode-${m}`);
+          if (btn) {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              if (modeMenu) modeMenu.classList.add('hidden');
+              if (gameMode === m) return;
+
+              gameMode = m;
+              const badge = document.getElementById('current-mode-badge');
+              if (badge) {
+                const nameMap = {
+                  mainmenu: 'Main Menu', guesser: 'Guesser', hotcold: 'Hot/Cold', trivia: 'Trivia',
+                  impact: 'Impact', speedstate: 'Speed', chained: 'Chained', flagged: 'Flagged',
+                  dontapply: 'Application', countrylink: 'Country Link', landmarker: 'Landmarker',
+                  timezoner: 'Time Zoner', higherlower: 'Higher/Lower', seconds: 'Seconds',
+                  payout: 'Payout', languages: 'Languages', empires: 'Empires', infection: 'Infection'
+                };
+                badge.textContent = nameMap[m] || m;
+              }
+              startNewRound();
+            });
           }
         });
 
-        const resetMenuStyles = () => {
-          [btnGuesser, btnHotCold, btnTrivia, btnImpact, btnSpeedState, btnChained, btnFlagged, btnDontApply, btnCountryLink, btnLandmarker, btnTimeZoner, btnHigherLower, btnSeconds, btnPayout, btnLanguages, btnEmpires, btnInfection].forEach(btn => {
-            if (btn) btn.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
-          });
-        };
-
-        if (btnGuesser && btnHotCold && btnTrivia && btnImpact && btnSpeedState && btnChained && btnFlagged && btnDontApply && btnCountryLink && btnLandmarker && btnTimeZoner && btnHigherLower && btnSeconds && btnPayout && btnLanguages && btnEmpires && btnInfection) {
-          btnGuesser.addEventListener('click', () => {
-            if (gameMode === 'guesser') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'guesser';
-            if (modeBadge) modeBadge.textContent = 'Country Guesser';
-            resetMenuStyles();
-            btnGuesser.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-amber-300 bg-slate-800/50";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnHotCold.addEventListener('click', () => {
-            if (gameMode === 'hotcold') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'hotcold';
-            if (modeBadge) modeBadge.textContent = 'Hot or Cold';
-            resetMenuStyles();
-            btnHotCold.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-amber-300 bg-slate-800/50 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnTrivia.addEventListener('click', () => {
-            if (gameMode === 'trivia') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'trivia';
-            if (modeBadge) modeBadge.textContent = 'Trivia Guesser';
-            resetMenuStyles();
-            btnTrivia.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-purple-300 bg-purple-900/40 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnImpact.addEventListener('click', () => {
-            if (gameMode === 'impact') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'impact';
-            if (modeBadge) modeBadge.textContent = 'Impact Mode';
-            resetMenuStyles();
-            btnImpact.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-orange-300 bg-orange-950/40 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnSpeedState.addEventListener('click', () => {
-            if (gameMode === 'speedstate') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'speedstate';
-            if (modeBadge) modeBadge.textContent = 'Speed Mode';
-            resetMenuStyles();
-            btnSpeedState.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-yellow-300 bg-yellow-950/40 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnChained.addEventListener('click', () => {
-            if (gameMode === 'chained') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'chained';
-            remainingChainIndices = [];
-            if (modeBadge) modeBadge.textContent = 'Chained';
-            resetMenuStyles();
-            btnChained.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-sky-300 bg-sky-950/40 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnFlagged.addEventListener('click', () => {
-            if (gameMode === 'flagged') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'flagged';
-            if (modeBadge) modeBadge.textContent = 'Flagged';
-            resetMenuStyles();
-            btnFlagged.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-emerald-300 bg-emerald-950/40 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnDontApply.addEventListener('click', () => {
-            if (gameMode === 'dontapply') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'dontapply';
-            if (modeBadge) modeBadge.textContent = "Application";
-            resetMenuStyles();
-            btnDontApply.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-pink-300 bg-pink-950/40 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnCountryLink.addEventListener('click', () => {
-            if (gameMode === 'countrylink') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'countrylink';
-            if (modeBadge) modeBadge.textContent = "Country Link";
-            resetMenuStyles();
-            btnCountryLink.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-emerald-300 bg-emerald-950/40 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnLandmarker.addEventListener('click', () => {
-            if (gameMode === 'landmarker') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'landmarker';
-            if (modeBadge) modeBadge.textContent = "Landmarker";
-            resetMenuStyles();
-            btnLandmarker.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-orange-300 bg-orange-950/40 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnTimeZoner.addEventListener('click', () => {
-            if (gameMode === 'timezoner') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'timezoner';
-            if (modeBadge) modeBadge.textContent = "Time Zoner";
-            resetMenuStyles();
-            btnTimeZoner.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-cyan-300 bg-cyan-950/40 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnHigherLower.addEventListener('click', () => {
-            if (gameMode === 'higherlower') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'higherlower';
-            if (modeBadge) modeBadge.textContent = "Higher or Lower";
-            resetMenuStyles();
-            btnHigherLower.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-amber-300 bg-amber-950/40 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnSeconds.addEventListener('click', () => {
-            if (gameMode === 'seconds') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'seconds';
-            if (modeBadge) modeBadge.textContent = "Seconds";
-            resetMenuStyles();
-            btnSeconds.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-rose-300 bg-rose-950/40 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnPayout.addEventListener('click', () => {
-            if (gameMode === 'payout') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'payout';
-            if (modeBadge) modeBadge.textContent = "Payout";
-            resetMenuStyles();
-            btnPayout.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-emerald-300 bg-emerald-950/40 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnLanguages.addEventListener('click', () => {
-            if (gameMode === 'languages') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'languages';
-            if (modeBadge) modeBadge.textContent = "Languages";
-            resetMenuStyles();
-            btnLanguages.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-sky-300 bg-sky-950/40 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnEmpires.addEventListener('click', () => {
-            if (gameMode === 'empires') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'empires';
-            if (modeBadge) modeBadge.textContent = "Ancient Empires";
-            resetMenuStyles();
-            btnEmpires.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-amber-300 bg-slate-800/50 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-
-          btnInfection.addEventListener('click', () => {
-            if (gameMode === 'infection') { modeMenu.classList.add('hidden'); return; }
-            gameMode = 'infection';
-            remainingInfectionIndices = [];
-            if (modeBadge) modeBadge.textContent = "Infection";
-            resetMenuStyles();
-            btnInfection.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-emerald-300 bg-emerald-950/40 mt-1";
-            modeMenu.classList.add('hidden');
-            startNewRound();
-          });
-        }
-      }
-
-      window.addEventListener('resize', () => {
-        if (worldGlobe && globeDiv) {
+        window.addEventListener('resize', () => {
+          if (!worldGlobe || !globeDiv) return;
           const rect = globeDiv.getBoundingClientRect();
           const w = rect.width || globeDiv.clientWidth || window.innerWidth;
           const h = rect.height || globeDiv.clientHeight || window.innerHeight;
           worldGlobe.width(w).height(h);
-        }
-      });
+        });
+
+      } catch (err) {
+        console.error("Globe initialization error:", err);
+      }
     }
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initApp);
-    } else {
+    window.addEventListener('DOMContentLoaded', () => {
       initApp();
-    }
+    });
   </script>
 </body>
 </html>
