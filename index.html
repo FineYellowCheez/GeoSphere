@@ -205,6 +205,13 @@
                 <div class="text-[10px] font-normal text-slate-400">Compare stats between 2 countries</div>
               </div>
             </button>
+            <button id="mode-seconds" class="w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-rose-300 mt-1">
+              <i class="fa-solid fa-utensils text-rose-400 text-sm"></i>
+              <div>
+                <div>Seconds</div>
+                <div class="text-[10px] font-normal text-slate-400">Guess country origin of 300+ foods & desserts</div>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -370,68 +377,252 @@
     window.toggleLandmarkerHint = toggleLandmarkerHint;
 
     const LANDMARK_DATABASE = [
-      // EASY
-      { name: "Great Pyramids of Giza", country: "EGY", difficulty: "Easy", info: "Ancient wonder of the world located on the Giza Plateau near Cairo." },
-      { name: "Eiffel Tower", country: "FRA", difficulty: "Easy", info: "Wrought-iron lattice tower on the Champ de Mars in Paris." },
-      { name: "Statue of Liberty", country: "USA", difficulty: "Easy", info: "Colossal neoclassical sculpture on Liberty Island in New York Harbor." },
-      { name: "Taj Mahal", country: "IND", difficulty: "Easy", info: "Ivory-white marble mausoleum on the right bank of the Yamuna River in Agra." },
-      { name: "Colosseum", country: "ITA", difficulty: "Easy", info: "Oval amphitheatre in the centre of the city of Rome." },
-      { name: "Great Wall of China", country: "CHN", difficulty: "Easy", info: "Series of fortifications built across the historical northern borders of China." },
-      { name: "Machu Picchu", country: "PER", difficulty: "Easy", info: "15th-century Inca citadel located in the Eastern Cordillera of southern Peru." },
-      { name: "Christ the Redeemer", country: "BRA", difficulty: "Easy", info: "Art Deco statue of Jesus Christ overlooking Rio de Janeiro from Mount Corcovado." },
-      { name: "Sydney Opera House", country: "AUS", difficulty: "Easy", info: "Multi-venue performing arts centre at Sydney Harbour." },
-      { name: "Big Ben (Elizabeth Tower)", country: "GBR", difficulty: "Easy", info: "Iconic clock tower at the north end of the Houses of Parliament in London." },
-      { name: "Mount Fuji", country: "JPN", difficulty: "Easy", info: "Active stratovolcano that is Japan's highest peak." },
-      { name: "Acropolis of Athens", country: "GRC", difficulty: "Easy", info: "Ancient citadel located on a rocky outcrop above the city of Athens." },
-      { name: "Sagrada Familia", country: "ESP", difficulty: "Easy", info: "Large unfinished Roman Catholic minor basilica designed by Antoni Gaudí in Barcelona." },
-      { name: "Burj Khalifa", country: "ARE", difficulty: "Easy", info: "World's tallest skyscraper standing at 828 meters in Dubai." },
-      { name: "Petra (The Treasury)", country: "JOR", difficulty: "Easy", info: "Famous rock-cut architecture ancient city carved into pink sandstone cliffs." },
-      { name: "Chichen Itza (El Castillo)", country: "MEX", difficulty: "Easy", info: "Large pre-Columbian Mayan step-pyramid in Yucatán state." },
-      { name: "Neuschwanstein Castle", country: "DEU", difficulty: "Easy", info: "19th-century historicist palace on a rugged hill above Hohenschwangau in Bavaria." },
-      { name: "Saint Basil's Cathedral", country: "RUS", difficulty: "Easy", info: "Multi-domed church located in Red Square in Moscow." },
-      { name: "Stonehenge", country: "GBR", difficulty: "Easy", info: "Prehistoric megalithic monument on Salisbury Plain in Wiltshire." },
-      { name: "Golden Gate Bridge", country: "USA", difficulty: "Easy", info: "Famous orange suspension bridge spanning the Golden Gate strait in San Francisco." },
-
-      // MEDIUM
-      { name: "Tower of the Americas", country: "USA", difficulty: "Medium", info: "750-foot observation tower and restaurant located in downtown San Antonio, Texas." },
-      { name: "CN Tower", country: "CAN", difficulty: "Medium", info: "553.3 m-high concrete communications and observation tower in downtown Toronto." },
-      { name: "Moai Statues of Easter Island", country: "CHL", difficulty: "Medium", info: "Monolithic human figures carved by the Rapa Nui people on Rapa Nui island." },
-      { name: "Arc de Triomphe", country: "FRA", difficulty: "Medium", info: "Famous triumphal arch standing at the western end of the Champs-Élysées in Paris." },
-      { name: "Bran Castle (Dracula's Castle)", country: "ROU", difficulty: "Medium", info: "National monument and landmark in Transylvania associated with the Dracula legend." },
-      { name: "The Little Mermaid Statue", country: "DNK", difficulty: "Medium", info: "Bronze statue depicting a mermaid by Edvard Eriksen in Copenhagen harbor." },
-      { name: "Mount Kilimanjaro", country: "TZA", difficulty: "Medium", info: "Dormant volcano and the highest mountain in Africa, rising 5,895 meters above sea level." },
-      { name: "Charles Bridge", country: "CZE", difficulty: "Medium", info: "Historic stone gothic bridge that crosses the Vltava river in Prague." },
-      { name: "Marina Bay Sands", country: "SGP", difficulty: "Medium", info: "Integrated resort featuring three towers topped by a cantilevered SkyPark infinity pool." },
-      { name: "Petronas Twin Towers", country: "MYS", difficulty: "Medium", info: "88-storey supertall skyscrapers connected by a skybridge in Kuala Lumpur." },
-
-      // HARD
-      { name: "Tiger's Nest Monastery (Paro Taktsang)", country: "BTN", difficulty: "Hard", info: "Sacred Vajrayana Himalayan Buddhist site clinging to a cliff high above the Paro valley." },
-      { name: "Leshan Giant Buddha", country: "CHN", difficulty: "Hard", info: "71-metre tall stone statue carved out of a cliff face of Cretaceous red sandstones in Sichuan." },
-      { name: "Rock of Gibraltar", country: "GBR", difficulty: "Hard", info: "Monolithic limestone promontory located on the Iberian Peninsula." },
-      { name: "Torii Gate of Itsukushima Shrine", country: "JPN", difficulty: "Hard", info: "Floating vermilion torii gate situated in Miyajima Island." },
-      { name: "Lake Bled Island & Church", country: "SVN", difficulty: "Hard", info: "Picture-postcard church situated on a small island in the middle of a glacial lake." },
-      { name: "Salar de Uyuni Salt Flats", country: "BOL", difficulty: "Hard", info: "World's largest salt flat, spanning over 10,000 square kilometers near the Andes." },
-
-      // SUPER HARD / OBSCURE
-      { name: "Le Pouce Mountain", country: "MUS", difficulty: "Super Hard", info: "Thumb-shaped mountain peak overlooking Port Louis, the capital of Mauritius." },
-      { name: "Darvaza Gas Crater (Door to Hell)", country: "TKM", difficulty: "Super Hard", info: "Natural gas field collapsed into a cavern near Derweze that has been burning continuously since 1971." },
-      { name: "Buzludzha Monument", country: "BGR", difficulty: "Super Hard", info: "Flying saucer-shaped concrete communist monument abandoned atop the Buzludzha peak." },
-      { name: "Predjama Castle", country: "SVN", difficulty: "Super Hard", info: "Renaissance castle built within a cave mouth in south-central Slovenia." },
-      { name: "Hand of the Desert (Mano del Desierto)", country: "CHL", difficulty: "Super Hard", info: "Large sculpture of a human hand located in the Atacama Desert south of Antofagasta." }
+      { name: "Eiffel Tower", country: "FRA", info: "Wrought-iron lattice tower on the Champ de Mars in Paris." },
+      { name: "Statue of Liberty", country: "USA", info: "Colossal neoclassical copper sculpture on Liberty Island in New York Harbor." },
+      { name: "Taj Mahal", country: "IND", info: "Ivory-white marble mausoleum on the right bank of the Yamuna river in Agra." },
+      { name: "Great Wall of China", country: "CHN", info: "Series of fortifications built across the historical northern borders of ancient China." },
+      { name: "Machu Picchu", country: "PER", info: "15th-century Inca citadel located in the Eastern Cordillera of southern Peru." },
+      { name: "Colosseum", country: "ITA", info: "Oval amphitheatre in the centre of the city of Rome." },
+      { name: "Christ the Redeemer", country: "BRA", info: "Art Deco statue of Jesus Christ in Rio de Janeiro." },
+      { name: "Pyramids of Giza", country: "EGY", info: "Ancient pyramid complex located on the Giza plateau near Cairo." },
+      { name: "Sydney Opera House", country: "AUS", info: "Multi-venue performing arts centre at Sydney Harbour." },
+      { name: "Petra", country: "JOR", info: "Famous archaeological site in Jordan's southwestern desert." },
+      { name: "Big Ben", country: "GBR", info: "Iconic clock tower at the north end of the Houses of Parliament in London." },
+      { name: "Sagrada Família", country: "ESP", info: "Unfinished minor basilica in the Eixample district of Barcelona." },
+      { name: "Mount Fuji", country: "JPN", info: "Active stratovolcano located on Honshu island, the highest peak in Japan." },
+      { name: "Acropolis of Athens", country: "GRC", info: "Ancient citadel located on a rocky outcrop above the city of Athens." },
+      { name: "Burj Khalifa", country: "ARE", info: "World's tallest skyscraper located in Dubai." }
     ];
 
-    // Impact Mode Meteor Database
     const METEOR_DATABASE = [
-      { name: "Chicxulub Crater", lat: 21.4, lng: -89.5, radius: 90, location: "Yucatán Peninsula, Mexico", age: "~66 Million Years Ago", fact: "The famous asteroid impact attributed to causing the mass extinction of the dinosaurs." },
-      { name: "Barringer Crater", lat: 35.027, lng: -111.022, radius: 0.6, location: "Arizona, United States", age: "~50,000 Years Ago", fact: "One of the best-preserved meteorite impact craters on Earth, formed by an iron-nickel meteor." },
-      { name: "Vredefort Dome", lat: -27.0, lng: 27.5, radius: 150, location: "Free State, South Africa", age: "~2.02 Billion Years Ago", fact: "The largest verified impact crater on Earth, originally estimated at 300 km wide." },
-      { name: "Sudbury Basin", lat: 46.6, lng: -81.2, radius: 65, location: "Ontario, Canada", age: "~1.85 Billion Years Ago", fact: "One of Earth's oldest impact structures, resulting in rich nickel and copper ore deposits." },
-      { name: "Manicouagan Crater", lat: 51.38, lng: -68.7, radius: 35, location: "Quebec, Canada", age: "~214 Million Years Ago", fact: "Known as the 'Eye of Quebec', this lake-ringed crater structure is clearly visible from orbit." },
-      { name: "Tunguska Event", lat: 60.92, lng: 101.94, radius: 15, location: "Siberia, Russia", age: "1908 AD", fact: "A massive ~12 megaton airburst explosion that flattened over 80 million trees in the Siberian forest." },
-      { name: "Ries Crater", lat: 48.88, lng: 10.55, radius: 12, location: "Bavaria, Germany", age: "~14.8 Million Years Ago", fact: "The medieval walled city of Nördlingen was built directly inside this prehistoric impact basin." },
-      { name: "Wolfe Creek Crater", lat: -19.17, lng: 127.79, radius: 0.45, location: "Western Australia", age: "~120,000 Years Ago", fact: "A remarkably well-preserved bowl crater situated in the sands of the Great Sandy Desert." },
-      { name: "Pingualuit Crater", lat: 61.28, lng: -73.67, radius: 1.7, location: "Nunavik, Quebec, Canada", age: "~1.4 Million Years Ago", fact: "A near-perfect circular crater lake fed exclusively by rain, containing some of the purest water on Earth." },
-      { name: "Lake Siljan", lat: 61.03, lng: 14.9, radius: 26, location: "Dalarna, Sweden", age: "~377 Million Years Ago", fact: "The largest impact structure in Western Europe, forming a ring of interconnected lakes and valleys." }
+      { name: "Chicxulub Crater", location: "Yucatán Peninsula, Mexico", age: "66 Million Years", lat: 21.4, lng: -89.5, radius: 90, fact: "Linked to the Cretaceous-Paleogene extinction event that wiped out non-avian dinosaurs." },
+      { name: "Barringer Crater", location: "Arizona, USA", age: "50,000 Years", lat: 35.027, lng: -111.022, radius: 1.2, fact: "One of the best-preserved meteorite impact craters on Earth, formed by an iron-nickel asteroid." },
+      { name: "Vredefort Dome", location: "Free State, South Africa", age: "2.02 Billion Years", lat: -27.0, lng: 27.5, radius: 150, fact: "The largest verified impact crater on Earth, spanning over 300 km across." },
+      { name: "Sudbury Basin", location: "Ontario, Canada", age: "1.85 Billion Years", lat: 46.6, lng: -81.2, radius: 65, fact: "One of Earth's oldest and largest impact structures, rich in nickel and copper deposits." },
+      { name: "Manicouagan Crater", location: "Quebec, Canada", age: "214 Million Years", lat: 51.38, lng: -68.7, radius: 50, fact: "Known as the 'Eye of Quebec', creating a prominent ring-shaped reservoir visible from space." },
+      { name: "Tunguska Event", location: "Siberia, Russia", age: "1908 (118 Years)", lat: 60.917, lng: 101.95, radius: 20, fact: "A massive ~12 megaton airburst that flattened 80 million trees across 2,150 sq km of forest." },
+      { name: "Nördlinger Ries", location: "Bavaria, Germany", age: "14.8 Million Years", lat: 48.85, lng: 10.5, radius: 12, fact: "The impact created suevite rocks containing billions of microscopic diamonds used in medieval city buildings." },
+      { name: "Wolfe Creek Crater", location: "Western Australia", age: "120,000 Years", lat: -19.172, lng: 127.795, radius: 0.9, fact: "A remarkably intact impact crater located on the edge of the Great Sandy Desert." },
+      { name: "Pingualuit Crater", location: "Quebec, Canada", age: "1.4 Million Years", lat: 61.28, lng: -73.67, radius: 1.7, fact: "Filled with ultra-pure fresh rainwater creating a striking crystal-blue lake." },
+      { name: "Siljan Ring", location: "Dalarna, Sweden", age: "377 Million Years", lat: 61.03, lng: 14.9, radius: 26, fact: "The largest impact crater in Western Europe, forming Lake Siljan and surrounding valleys." }
+    ];
+
+    // Seconds Mode State Variables
+    let secondsGuessesLeft = 3;
+    let secondsGuesses = [];
+    let targetFood = null;
+    let isSecondsHintRevealed = false;
+
+    function toggleSecondsHint() {
+      isSecondsHintRevealed = !isSecondsHintRevealed;
+      renderSecondsSidebar();
+    }
+    window.toggleSecondsHint = toggleSecondsHint;
+
+    const FOODS_DATABASE = [
+      // NORTH AMERICA & CARIBBEAN
+      { name: "Tacos", type: "Food", country: "MEX", info: "Traditional dish consisting of hand-sized corn or wheat tortillas topped with flavorful fillings." },
+      { name: "Tamales", type: "Food", country: "MEX", info: "Traditional dish made of masa dough steamed in a corn husk or banana leaf wrapper." },
+      { name: "Guacamole", type: "Food", country: "MEX", info: "Avocado-based dip, spread, or salad seasoned with lime, salt, and herbs." },
+      { name: "Enchiladas", type: "Food", country: "MEX", info: "Corn tortillas rolled around filling and covered with a savory chili sauce." },
+      { name: "Mole Poblano", type: "Food", country: "MEX", info: "Rich dark sauce combining chili peppers, spices, and unsweetened chocolate over meat." },
+      { name: "Pozole", type: "Food", country: "MEX", info: "Traditional soup or stew made from hominy with meat, seasoned with garlic and chili." },
+      { name: "Tres Leches Cake", type: "Dessert", country: "MEX", info: "Sponge cake soaked in three kinds of milk: evaporated milk, condensed milk, and heavy cream." },
+      { name: "Churros con Chocolate", type: "Dessert", country: "MEX", info: "Fried dough pastries dusted in sugar and cinnamon served with hot chocolate." },
+      { name: "Chiles en Nogada", type: "Food", country: "MEX", info: "Poblano chiles stuffed with picadillo topped with a walnut-based cream sauce and pomegranate." },
+      { name: "Poutine", type: "Food", country: "CAN", info: "Dish of french fries and cheese curds topped with a brown gravy." },
+      { name: "Butter Tarts", type: "Dessert", country: "CAN", info: "Small pastry tarts with a filling of butter, sugar, syrup, and egg." },
+      { name: "Nanaimo Bars", type: "Dessert", country: "CAN", info: "No-bake dessert bar with a wafer crumb base, custard-flavored butter icing, and chocolate ganache." },
+      { name: "BeaverTails", type: "Dessert", country: "CAN", info: "Fried dough pastries stretched to resemble beaver tails topped with cinnamon and sugar." },
+      { name: "Tourtière", type: "Food", country: "CAN", info: "Savory meat pie dish made with minced pork, beef, or game and warm spices." },
+      { name: "Hamburger", type: "Food", country: "USA", info: "Ground meat patty placed inside a sliced bread roll or bun." },
+      { name: "Clam Chowder", type: "Food", country: "USA", info: "Rich soup containing clams, potatoes, salt pork, and cream." },
+      { name: "Gumbo", type: "Food", country: "USA", info: "Flavorful stew consisting of strongly-flavored stock, meat or shellfish, and okra." },
+      { name: "Jambalaya", type: "Food", country: "USA", info: "One-pot rice dish consisting mainly of meat, seafood, peppers, and spices." },
+      { name: "Philly Cheesesteak", type: "Food", country: "USA", info: "Sandwich made from thinly sliced pieces of beefsteak and melted cheese in a long hoagie roll." },
+      { name: "Buffalo Wings", type: "Food", country: "USA", info: "Unbreaded chicken wing section deep-fried and coated in a vinegar-based cayenne pepper hot sauce." },
+      { name: "Apple Pie", type: "Dessert", country: "USA", info: "Fruit pie in which the principal filling ingredient is apples, spiced with cinnamon." },
+      { name: "Chocolate Chip Cookie", type: "Dessert", country: "USA", info: "Drop cookie that features chocolate chips or chocolate morsels." },
+      { name: "Key Lime Pie", type: "Dessert", country: "USA", info: "Tart dessert pie made of Key lime juice, egg yolks, and sweetened condensed milk." },
+      { name: "Brownies", type: "Dessert", country: "USA", info: "Square baked chocolate dessert bar with a fudgy or cakey texture." },
+      { name: "Pecan Pie", type: "Dessert", country: "USA", info: "Pie of pecan nuts mixed with a filling of eggs, butter, and sugar or corn syrup." },
+      { name: "S'mores", type: "Dessert", country: "USA", info: "Traditional campfire treat consisting of a toasted marshmallow and chocolate sandwiched between graham crackers." },
+      { name: "Red Velvet Cake", type: "Dessert", country: "USA", info: "Layer cake with a dark red or crimson-brown color frosted with cream cheese frosting." },
+      { name: "Ropa Vieja", type: "Food", country: "CUB", info: "Shredded flank steak stewed in a tomato-based sauce with peppers and onions." },
+      { name: "Jerk Chicken", type: "Food", country: "JAM", info: "Chicken hot-marinated with a spicy jerk seasoning blend." },
+      { name: "Ackee and Saltfish", type: "Food", country: "JAM", info: "Traditional dish made by sautéing salted codfish with boiled ackee fruit." },
+      { name: "Mofongo", type: "Food", country: "PRI", info: "Savory dish with fried plantains as its main ingredient mashed with garlic and pork rinds." },
+
+      // SOUTH AMERICA
+      { name: "Feijoada", type: "Food", country: "BRA", info: "Stew of black beans with beef and pork served with rice and farofa." },
+      { name: "Pão de Queijo", type: "Food", country: "BRA", info: "Baked cheese roll snack made with tapioca flour and cheese." },
+      { name: "Brigadeiro", type: "Dessert", country: "BRA", info: "Traditional sweet made of condensed milk, cocoa powder, butter, and chocolate sprinkles." },
+      { name: "Coxinha", type: "Food", country: "BRA", info: "Crispy drumstick-shaped croquette filled with shredded chicken and cream cheese." },
+      { name: "Moqueca", type: "Food", country: "BRA", info: "Saltwater fish stew cooked with palm oil (dendê), coconut milk, tomatoes, and cilantro." },
+      { name: "Açai Bowl", type: "Food", country: "BRA", info: "Dish made from mashed açai palm fruit served as a smoothie topped with granola and bananas." },
+      { name: "Asado", type: "Food", country: "ARG", info: "Technique and social tradition of attending a barbecue of grilled meats." },
+      { name: "Empanada", type: "Food", country: "ARG", info: "Baked or fried turnover pastry filled with seasoned ground beef, onions, and boiled egg." },
+      { name: "Alfajores", type: "Dessert", country: "ARG", info: "Confection of two sweet round cookies sandwiching a dulce de leche filling." },
+      { name: "Dulce de Leche", type: "Dessert", country: "ARG", info: "Confection prepared by slowly heating sweetened milk to create a caramel sauce." },
+      { name: "Ceviche", type: "Food", country: "PER", info: "Raw fresh fish cured in fresh citrus juices, most commonly lemon or lime." },
+      { name: "Lomo Saltado", type: "Food", country: "PER", info: "Savory stir-fry that combines marinated strips of sirloin with onions, tomatoes, and french fries." },
+      { name: "Causa Rellena", type: "Food", country: "PER", info: "Yellow potato cake layered with shredded chicken or tuna and avocado." },
+      { name: "Suspiro a la Limeña", type: "Dessert", country: "PER", info: "Sweet dessert consisting of a caramel-like manjar blanco topped with port-infused meringue." },
+      { name: "Arepa", type: "Food", country: "VEN", info: "Pre-Columbian unleavened patty of ground maize dough stuffed with meats and cheeses." },
+      { name: "Pabellón Criollo", type: "Food", country: "VEN", info: "National dish consisting of shredded beef, rice, black beans, and fried plantains." },
+      { name: "Bandeja Paisa", type: "Food", country: "COL", info: "Generous meal platter consisting of beans, rice, chicharrón, steak, fried egg, and plantain." },
+      { name: "Pastel de Choclo", type: "Food", country: "CHL", info: "Savory corn pie filled with minced meat, chicken, raisins, olives, and hard-boiled eggs." },
+      { name: "Sopaipilla", type: "Food", country: "CHL", info: "Fried pastry made from pumpkin dough served with pebre salsa or chancaca syrup." },
+
+      // WESTERN & NORTHERN EUROPE
+      { name: "Pizza", type: "Food", country: "ITA", info: "Flatbread topped with tomato sauce, cheese, and fresh ingredients baked in a wood-fired oven." },
+      { name: "Lasagna", type: "Food", country: "ITA", info: "Flat wide pasta stacked with layers of ragù sauce, béchamel, and melted cheese." },
+      { name: "Risotto", type: "Food", country: "ITA", info: "Creamy rice dish cooked slowly with broth and seasoned with parmesan." },
+      { name: "Spaghetti Carbonara", type: "Food", country: "ITA", info: "Rich pasta dish made with fatty cured pork, hard cheese, egg yolks, and black pepper." },
+      { name: "Tiramisu", type: "Dessert", country: "ITA", info: "Coffee-flavored dessert made of ladyfingers dipped in coffee, layered with whipped mascarpone." },
+      { name: "Gelato", type: "Dessert", country: "ITA", info: "Frozen dessert containing less fat and air than traditional ice cream, served at a warmer temperature." },
+      { name: "Cannoli", type: "Dessert", country: "ITA", info: "Crispy pastry consisting of tube-shaped shells of fried dough filled with sweet ricotta." },
+      { name: "Panettone", type: "Dessert", country: "ITA", info: "Sweet bread loaf studded with candied fruits and raisins, usually prepared for Christmas." },
+      { name: "Croissant", type: "Food", country: "FRA", info: "Butter-laminated flaky pastry baked into a golden crescent shape." },
+      { name: "Coq au Vin", type: "Food", country: "FRA", info: "Savory dish of chicken braised with wine, lardons, mushrooms, and garlic." },
+      { name: "Beef Bourguignon", type: "Food", country: "FRA", info: "Stew prepared with beef braised in red wine, herbs, and beef stock." },
+      { name: "Ratatouille", type: "Food", country: "FRA", info: "Stewed vegetable dish featuring eggplant, zucchini, bell peppers, and tomatoes." },
+      { name: "Crème Brûlée", type: "Dessert", country: "FRA", info: "Dessert consisting of a rich custard base topped with a layer of hardened caramelized sugar." },
+      { name: "Macarons", type: "Dessert", country: "FRA", info: "Sweet meringue-based confection made with egg white, icing sugar, granulated sugar, and almond meal." },
+      { name: "Éclair", type: "Dessert", country: "FRA", info: "Oblong pastry made with choux dough filled with cream and topped with chocolate icing." },
+      { name: "Tarte Tatin", type: "Dessert", country: "FRA", info: "Upside-down pastry in which the fruit is caramelized in butter and sugar before the pie is baked." },
+      { name: "Currywurst", type: "Food", country: "DEU", info: "Fast food dish of steamed and fried pork sausage cut into slices and seasoned with curry ketchup." },
+      { name: "Bratwurst", type: "Food", country: "DEU", info: "Savory sausage made from pork, beef, or veal grilled over charcoal." },
+      { name: "Sauerbraten", type: "Food", country: "DEU", info: "Pot roast of heavily marinated meat cooked as a traditional centerpiece meal." },
+      { name: "Black Forest Cake", type: "Dessert", country: "DEU", info: "Chocolate sponge cake with cherry filling based on Kirschwasser cherry spirit." },
+      { name: "Stollen", type: "Dessert", country: "DEU", info: "Fruit bread containing dried fruit and covered with powdered sugar." },
+      { name: "Fish and Chips", type: "Food", country: "GBR", info: "Hot dish consisting of fried fish in batter served with deep-fried chips." },
+      { name: "Shepherd's Pie", type: "Food", country: "GBR", info: "Savory pie consisting of minced lamb cooked in gravy topped with mashed potatoes." },
+      { name: "Beef Wellington", type: "Food", country: "GBR", info: "Fillet steak coated with pâté and duxelles, wrapped in puff pastry and baked." },
+      { name: "Chicken Tikka Masala", type: "Food", country: "GBR", info: "Dish of roasted marinated chicken chunks in a rich spiced tomato-cream sauce." },
+      { name: "Sticky Toffee Pudding", type: "Dessert", country: "GBR", info: "Moist sponge cake made with finely chopped dates, covered in a toffee sauce." },
+      { name: "Paella", type: "Food", country: "ESP", info: "Saffron-infused rice dish cooked with vegetables, rabbit, chicken, or seafood." },
+      { name: "Gazpacho", type: "Food", country: "ESP", info: "Cold soup made of raw, blended tomatoes, cucumbers, peppers, and garlic." },
+      { name: "Tortilla de Patatas", type: "Food", country: "ESP", info: "Omelette made with eggs and potatoes, cooked in olive oil." },
+      { name: "Churros", type: "Dessert", country: "ESP", info: "Fried dough pastry piped through a star-shaped nozzle and fried in hot oil." },
+      { name: "Wiener Schnitzel", type: "Food", country: "AUT", info: "Thin, breaded, pan-fried veal cutlet served with lemon slices." },
+      { name: "Sachertorte", type: "Dessert", country: "AUT", info: "Rich chocolate cake layered with apricot jam and coated in dark chocolate glaze." },
+      { name: "Apfelstrudel", type: "Dessert", country: "AUT", info: "Flaky pastry consisting of an oblong rolled jacket with a spiced apple filling." },
+      { name: "Cheese Fondue", type: "Food", country: "CHE", info: "Melted cheese dish served in a communal pot over a portable stove, eaten by dipping bread." },
+      { name: "Rösti", type: "Food", country: "CHE", info: "Crispy dish consisting mainly of potatoes, fried into flat round patties." },
+      { name: "Moules-Frites", type: "Food", country: "BEL", info: "Main dish of cooked mussels served with french fries." },
+      { name: "Belgian Waffles", type: "Dessert", country: "BEL", info: "Grid-patterned waffle with deep pockets baked with yeast batter." },
+      { name: "Stroopwafel", type: "Dessert", country: "NLD", info: "Waffle made from two thin layers of baked dough joined by a caramel filling." },
+      { name: "Pastel de Nata", type: "Dessert", country: "PRT", info: "Egg custard tart pastry with a blistered top dusted with cinnamon and powdered sugar." },
+      { name: "Francesinha", type: "Food", country: "PRT", info: "Layered sandwich made with bread, ham, linguiça sausage, covered with melted cheese and hot beer-tomato sauce." },
+      { name: "Cinnamon Roll (Kanelbulle)", type: "Dessert", country: "SWE", info: "Sweet roll baked with cinnamon, butter, and cardamom." },
+      { name: "Köttbullar (Swedish Meatballs)", type: "Food", country: "SWE", info: "Ground meat balls served with gravy, boiled potatoes, and lingonberry jam." },
+      { name: "Princess Cake (Prinsesstårta)", type: "Dessert", country: "SWE", info: "Layer cake consisting of sponge cake, pastry cream, jam, and a thick green marzipan dome." },
+      { name: "Gravlax", type: "Food", country: "NOR", info: "Cured fish dish consisting of salmon cured in sugar, salt, and dill." },
+      { name: "Smørrebrød", type: "Food", country: "DNK", info: "Open-faced sandwich on rye bread topped with cold cuts, fish, or cheese." },
+
+      // EASTERN EUROPE & BALKANS
+      { name: "Pierogi", type: "Food", country: "POL", info: "Filled dumplings made by wrapping unleavened dough around a savory or sweet filling." },
+      { name: "Bigos", type: "Food", country: "POL", info: "Hearty hunter's stew of finely chopped meat braised with sauerkraut and fresh cabbage." },
+      { name: "Pączki", type: "Dessert", country: "POL", info: "Deep-fried dough filled with sweet rose jam or custard topped with sugar or glaze." },
+      { name: "Goulash", type: "Food", country: "HUN", info: "Stew of meat and vegetables seasoned with paprika and other spices." },
+      { name: "Chicken Paprikash", type: "Food", country: "HUN", info: "Savory stew made of chicken chunks in a rich paprika and sour cream sauce." },
+      { name: "Dobos Torte", type: "Dessert", country: "HUN", info: "Multi-layered sponge cake layered with chocolate buttercream and topped with caramel." },
+      { name: "Trdelník", type: "Dessert", country: "CZE", info: "Spit-roasted cake made from rolled dough wrapped around a stick, grilled and topped with sugar and walnuts." },
+      { name: "Borscht", type: "Food", country: "UKR", info: "Sour soup made with beetroots as the main ingredient giving it a distinct red color." },
+      { name: "Varenyky", type: "Food", country: "UKR", info: "Boiled dumplings filled with mashed potatoes, sauerkraut, cheese, or berries." },
+      { name: "Beef Stroganoff", type: "Food", country: "RUS", info: "Tender dish of sautéed pieces of beef served in a sauce with sour cream." },
+      { name: "Pelmeni", type: "Food", country: "RUS", info: "Dumplings consisting of a minced meat filling wrapped in thin dough." },
+      { name: "Medovik", type: "Dessert", country: "RUS", info: "Multi-layered honey cake filled with sour cream or condensed milk frosting." },
+      { name: "Banitsa", type: "Food", country: "BGR", info: "Traditional pastry prepared by layering whisked eggs and cheese between filo pastry." },
+      { name: "Sarmale", type: "Food", country: "ROU", info: "Cabbage rolls stuffed with minced pork meat, rice, and onions." },
+
+      // MIDDLE EAST & NORTH AFRICA
+      { name: "Doner Kebab", type: "Food", country: "TUR", info: "Meat cooked on a vertical rotisserie, sliced into thin shavings served in pita." },
+      { name: "Baklava", type: "Dessert", country: "TUR", info: "Rich, sweet dessert pastry made of layers of filo filled with chopped nuts and syrup." },
+      { name: "Turkish Delight (Lokum)", type: "Dessert", country: "TUR", info: "Confection based on a gel of starch and sugar flavored with rosewater or bergamot." },
+      { name: "Lahmacun", type: "Food", country: "TUR", info: "Crispy flatbread topped with minced meat, vegetables, and herbs baked in a stone oven." },
+      { name: "Knafeh", type: "Dessert", country: "LBN", info: "Spun pastry dessert soaked in sweet sugar syrup layered with melted cheese." },
+      { name: "Hummus", type: "Food", country: "LBN", info: "Savory dip made from cooked, mashed chickpeas blended with tahini, lemon juice, and garlic." },
+      { name: "Shawarma", type: "Food", country: "LBN", info: "Meat cut into thin slices, stacked in a cone-like shape on a vertical rotisserie." },
+      { name: "Tabbouleh", type: "Food", country: "LBN", info: "Fresh salad made of finely chopped parsley, tomatoes, mint, onion, and bulgur." },
+      { name: "Falafel", type: "Food", country: "EGY", info: "Deep-fried ball or patty made from ground fava beans or chickpeas." },
+      { name: "Koshary", type: "Food", country: "EGY", info: "National dish made of rice, macaroni, and lentils mixed together, topped with spicy tomato sauce." },
+      { name: "Ful Medames", type: "Food", country: "EGY", info: "Stew of cooked fava beans served with olive oil, cumin, garlic, and lemon juice." },
+      { name: "Mansaf", type: "Food", country: "JOR", info: "Traditional dish made of lamb cooked in a sauce of fermented dried yogurt." },
+      { name: "Kabsa", type: "Food", country: "SAU", info: "Mixed rice dish served on a large platter featuring long-grain rice, meat, and spices." },
+      { name: "Tajine", type: "Food", country: "MAR", info: "Slow-cooked stew cooked in a cone-shaped earthenware vessel." },
+      { name: "Couscous", type: "Food", country: "MAR", info: "Steamed semolina granules served with a stew of meat and vegetables." },
+      { name: "Shakshuka", type: "Food", country: "TUN", info: "Poached eggs in a sauce of tomatoes, olive oil, peppers, onion, and garlic." },
+
+      // SUB-SAHARAN AFRICA
+      { name: "Jollof Rice", type: "Food", country: "NGA", info: "One-pot rice dish made with long-grain rice, tomatoes, onions, spices, and chili peppers." },
+      { name: "Suya", type: "Food", country: "NGA", info: "Spicy skewered meat barbecue seasoned with ground peanuts and chili." },
+      { name: "Doro Wat", type: "Food", country: "ETH", info: "Spicy chicken stew cooked with berbere spice and clarified butter served with flatbread." },
+      { name: "Injera", type: "Food", country: "ETH", info: "Sour fermented flatbread with a spongy texture made from teff flour." },
+      { name: "Bobotie", type: "Food", country: "ZAF", info: "Spiced minced meat bake topped with an egg-based custard layer." },
+      { name: "Bunny Chow", type: "Food", country: "ZAF", info: "Fast food dish consisting of a hollowed-out loaf of white bread filled with curry." },
+      { name: "Malva Pudding", type: "Dessert", country: "ZAF", info: "Sweet spongy pudding containing apricot jam and served warm with custard sauce." },
+      { name: "Nyama Choma", type: "Food", country: "KEN", info: "Grilled goat meat roasted over open charcoal flames." },
+      { name: "Thieboudienne", type: "Food", country: "SEN", info: "National dish made from fish, rice, and tomato sauce cooked in one pot." },
+
+      // SOUTH ASIA
+      { name: "Biryani", type: "Food", country: "IND", info: "Mixed rice dish cooked with aromatic spices, rice, and meat or vegetables." },
+      { name: "Butter Chicken", type: "Food", country: "IND", info: "Dish of chicken cooked in a mildly spiced, creamy tomato and butter sauce." },
+      { name: "Dosa", type: "Food", country: "IND", info: "Thin crispy pancake made from a fermented batter of lentils and rice." },
+      { name: "Gulab Jamun", type: "Dessert", country: "IND", info: "Sweet confection of milk solids fried into balls and soaked in rose-flavored sugar syrup." },
+      { name: "Jalebi", type: "Dessert", country: "IND", info: "Spiral-shaped deep-fried batter soaked in sugar syrup." },
+      { name: "Samosa", type: "Food", country: "IND", info: "Fried pastry with a savory filling of spiced potatoes, onions, and peas." },
+      { name: "Palak Paneer", type: "Food", country: "IND", info: "Vegetarian dish consisting of paneer cheese in a thick paste made from pureed spinach." },
+      { name: "Rasam", type: "Food", country: "IND", info: "Spicy-sour soup prepared using kokum, tamarind, or tomato juice." },
+      { name: "Nihari", type: "Food", country: "PAK", info: "Slow-cooked stew of meat braised with bone marrow and spiced with shank meat." },
+      { name: "Kothu Roti", type: "Food", country: "LKA", info: "Street food dish made from chopped flatbread, vegetables, egg, and meat." },
+      { name: "Momo", type: "Food", country: "NPL", info: "Type of steamed or fried dumpling filled with vegetables or seasoned meat." },
+
+      // EAST ASIA
+      { name: "Peking Duck", type: "Food", country: "CHN", info: "Famous dish featuring crispy roasted duck skin wrapped in thin pancakes." },
+      { name: "Dim Sum", type: "Food", country: "CHN", info: "Bite-sized style of food served in small bamboo steamer baskets." },
+      { name: "Mapo Tofu", type: "Food", country: "CHN", info: "Flavorful dish consisting of tofu set in a spicy chili and bean sauce with minced meat." },
+      { name: "Kung Pao Chicken", type: "Food", country: "CHN", info: "Spicy stir-fried dish made with chicken, peanuts, vegetables, and chili peppers." },
+      { name: "Xiaolongbao", type: "Food", country: "CHN", info: "Type of delicate steamed bun prepared in a bamboo basket filled with hot soup broth." },
+      { name: "Mooncake", type: "Dessert", country: "CHN", info: "Rich pastry filled with lotus seed paste or sweet red bean paste eaten during Mid-Autumn Festival." },
+      { name: "Sushi", type: "Food", country: "JPN", info: "Vinegared rice combined with raw seafood and vegetables." },
+      { name: "Ramen", type: "Food", country: "JPN", info: "Noodle soup dish served in a meat or fish broth flavored with soy sauce or miso." },
+      { name: "Tempura", type: "Food", country: "JPN", info: "Seafood or vegetables that have been battered and deep fried." },
+      { name: "Takoyaki", type: "Food", country: "JPN", info: "Ball-shaped snack made of a wheat flour-based batter filled with minced octopus." },
+      { name: "Mochi", type: "Dessert", country: "JPN", info: "Chewy rice cake made of short-grain glutinous rice pounded into a paste." },
+      { name: "Dorayaki", type: "Dessert", country: "JPN", info: "Confection consisting of two small pancake-like patties wrapped around sweet azuki red bean paste." },
+      { name: "Matcha Ice Cream", type: "Dessert", country: "JPN", info: "Ice cream flavored with finely ground powder of specially grown green tea leaves." },
+      { name: "Kimchi", type: "Food", country: "KOR", info: "Traditional side dish of salted and fermented napa cabbage and sliced radishes." },
+      { name: "Bulgogi", type: "Food", country: "KOR", info: "Thin marinated slices of beef grilled on a barbecue." },
+      { name: "Bibimbap", type: "Food", country: "KOR", info: "Rice bowl dish topped with sautéed vegetables, chili pepper paste, and raw egg." },
+      { name: "Bingsu", type: "Dessert", country: "KOR", info: "Shaved ice dessert with sweet toppings such as chopped fruit, condensed milk, and red beans." },
+      { name: "Hotteok", type: "Dessert", country: "KOR", info: "Filled street pancake stuffed with brown sugar, honey, chopped peanuts, and cinnamon." },
+
+      // SOUTHEAST ASIA
+      { name: "Pad Thai", type: "Food", country: "THA", info: "Stir-fried rice noodle dish cooked with eggs, tofu, peanuts, and bean sprouts." },
+      { name: "Tom Yum Goong", type: "Food", country: "THA", info: "Hot and sour soup cooked with shrimp, lemongrass, galangal, and kaffir lime leaves." },
+      { name: "Green Curry", type: "Food", country: "THA", info: "Curry based on coconut milk and fresh green chilies." },
+      { name: "Mango Sticky Rice", type: "Dessert", country: "THA", info: "Traditional dessert made with glutinous rice, fresh mango slices, and coconut milk." },
+      { name: "Pho", type: "Food", country: "VNM", info: "Soup consisting of broth, rice noodles, herbs, and meat (usually beef or chicken)." },
+      { name: "Banh Mi", type: "Food", country: "VNM", info: "Single-serving baguette split lengthways and filled with savory pork, pate, and pickled vegetables." },
+      { name: "Egg Coffee", type: "Dessert", country: "VNM", info: "Frothy drink prepared with whipped egg yolks, sugar, condensed milk, and robusta coffee." },
+      { name: "Nasi Goreng", type: "Food", country: "IDN", info: "Flavorful fried rice dish cooked with sweet soy sauce, shallots, garlic, and spices." },
+      { name: "Satay", type: "Food", country: "IDN", info: "Dish of seasoned, skewered, and grilled meat served with peanut sauce." },
+      { name: "Rendang", type: "Food", country: "IDN", info: "Rich meat dish of beef slow-cooked in coconut milk and aromatic spices." },
+      { name: "Nasi Lemak", type: "Food", country: "MYS", info: "Fragrant rice dish cooked in coconut milk and pandan leaf, served with sambal." },
+      { name: "Laksa", type: "Food", country: "MYS", info: "Spicy noodle soup consisting of thick wheat noodles or rice vermicelli with chicken, prawn or fish." },
+      { name: "Hainanese Chicken Rice", type: "Food", country: "SGP", info: "Poached chicken served with fragrant rice cooked in chicken broth and chili dip." },
+      { name: "Chili Crab", type: "Food", country: "SGP", info: "Seafood dish in which mud crabs are stir-fried in a sweet and savory tomato-chili sauce." },
+      { name: "Chicken Adobo", type: "Food", country: "PHL", info: "Chicken marinated in vinegar, soy sauce, garlic, bay leaves, and black peppercorns." },
+      { name: "Halo-Halo", type: "Dessert", country: "PHL", info: "Cold dessert of crushed ice, evaporated milk, and various ingredients like ube, boba, and leche flan." },
+
+      // OCEANIA
+      { name: "Meat Pie", type: "Food", country: "AUS", info: "Hand-sized pie containing diced or minced meat and gravy baked in a pastry shell." },
+      { name: "Lamington", type: "Dessert", country: "AUS", info: "Sponge cake made from squares of butter cake coated in chocolate sauce and rolled in coconut." },
+      { name: "Vegemite on Toast", type: "Food", country: "AUS", info: "Thick, dark brown savory yeast spread served on buttered toast." },
+      { name: "Pavlova", type: "Dessert", country: "NZL", info: "Meringue-based dessert topped with whipped cream and fresh fruit." },
+      { name: "Anzac Biscuits", type: "Dessert", country: "NZL", info: "Sweet biscuit made using rolled oats, flour, sugar, butter, golden syrup, and baking soda." }
     ];
 
     // Don't Apply Mode State Variables
@@ -1443,15 +1634,45 @@
             <span class="font-semibold text-teal-300">Chain Node</span>
           </div>
         `;
+      } else if (gameMode === 'seconds') {
+        legendDiv.innerHTML = `
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow"></span>
+            <span class="font-semibold text-amber-300">Selected</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
+            <span class="font-semibold text-red-300">Wrong</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block shadow"></span>
+            <span class="font-semibold text-rose-300">Origin</span>
+          </div>
+        `;
       } else if (gameMode === 'guesser') {
         legendDiv.innerHTML = `
           <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow"></span>
+            <span class="font-semibold text-amber-300">Selected</span>
+          </div>
+          <div class="flex items-center space-x-1">
             <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
-            <span class="font-semibold text-red-300">Hot (&lt;2.5k)</span>
+            <span class="font-semibold text-red-300">Wrong</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow"></span>
+            <span class="font-semibold text-emerald-300">Target</span>
+          </div>
+        `;
+      } else if (gameMode === 'hotcold') {
+        legendDiv.innerHTML = `
+          <div class="flex items-center space-x-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block shadow"></span>
+            <span class="font-semibold text-red-300">Hot (&lt;1.5k)</span>
           </div>
           <div class="flex items-center space-x-1">
             <span class="w-2.5 h-2.5 rounded-full bg-yellow-500 inline-block shadow"></span>
-            <span class="font-semibold text-yellow-300">Warm (&lt;5k)</span>
+            <span class="font-semibold text-yellow-300">Warm (&lt;3k)</span>
           </div>
           <div class="flex items-center space-x-1">
             <span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow"></span>
@@ -2233,6 +2454,93 @@
             ` : `
               <div class="glass-card p-2 rounded-lg border ${gameWon ? 'border-orange-500/50 bg-orange-950/40 text-orange-300' : 'border-red-500/50 bg-red-950/40 text-red-300'} text-xs font-bold text-center">
                 ${gameWon ? `Correct! ${targetLandmark.name} is in <strong>${targetName}</strong>!` : `Game Over! ${targetLandmark.name} is located in <strong>${targetName}</strong>.`}
+              </div>
+            `}
+          </div>
+
+          ${historyHtml}
+        </div>
+      `;
+    }
+
+    function renderSecondsSidebar() {
+      const container = document.getElementById('sidebar-container');
+      if (!container || !targetFood) return;
+
+      const targetName = targetCountryFeature ? getFeatureName(targetCountryFeature) : "Target Country";
+
+      let historyHtml = '';
+      if (secondsGuesses.length > 0) {
+        historyHtml = `
+          <div class="pt-1">
+            <div class="text-[9px] uppercase font-bold text-slate-400 mb-1">Wrong Guesses:</div>
+            <div class="flex flex-wrap gap-1">
+              ${secondsGuesses.map(g => `<span class="px-2 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/40 text-[10px] line-through">${g}</span>`).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      const typeBadge = targetFood.type === 'Dessert' 
+        ? `<span class="px-2 py-0.5 rounded-md bg-pink-500/20 text-pink-300 border border-pink-500/40 text-[9px] font-mono font-bold"><i class="fa-solid fa-cookie-bite text-pink-400 mr-1"></i>Dessert</span>`
+        : `<span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-mono font-bold"><i class="fa-solid fa-bowl-food text-amber-400 mr-1"></i>Dish</span>`;
+
+      container.innerHTML = `
+        <div class="glass-card p-3 rounded-xl border border-rose-500/40 text-xs shadow-md animate-fade-in space-y-2.5 pointer-events-auto">
+          <div class="flex items-center justify-between">
+            <div class="font-bold text-rose-300 flex items-center space-x-1.5">
+              <i class="fa-solid fa-utensils text-rose-400 text-sm"></i>
+              <span>Seconds</span>
+            </div>
+            <div class="flex items-center space-x-1.5">
+              <span class="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-mono font-bold">
+                ${secondsGuessesLeft} / 3 Tries
+              </span>
+            </div>
+          </div>
+
+          <!-- Food Card -->
+          <div class="glass-card p-2.5 rounded-lg border border-rose-500/30 bg-slate-900/80 space-y-1">
+            <div class="text-[9px] uppercase font-bold text-amber-400 tracking-wider flex items-center justify-between">
+              <span>Origin Mystery</span>
+              ${typeBadge}
+            </div>
+            <div class="text-sm font-black text-white leading-tight">
+              "${targetFood.name}"
+            </div>
+            <div class="text-[10px] text-slate-300 pt-0.5 leading-relaxed italic">
+              ${targetFood.info}
+            </div>
+          </div>
+
+          <!-- Reveal Hint Section -->
+          ${!isSecondsHintRevealed ? `
+            <button onclick="toggleSecondsHint()" class="w-full py-1.5 px-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px] font-bold flex items-center justify-center space-x-1.5 transition cursor-pointer">
+              <i class="fa-solid fa-lightbulb text-amber-400"></i>
+              <span>Reveal Region Hint</span>
+            </button>
+          ` : `
+            <div class="glass-card p-2 rounded-lg border border-rose-500/30 bg-slate-900/80 text-[10px] text-slate-300 space-y-1 animate-fade-in">
+              <div class="flex items-center justify-between text-rose-300 font-bold mb-1">
+                <span><i class="fa-solid fa-lightbulb text-amber-400 mr-1"></i>Region Clue</span>
+                <button onclick="toggleSecondsHint()" class="text-slate-400 hover:text-white text-[9px] underline cursor-pointer">
+                  <i class="fa-solid fa-eye-slash mr-0.5"></i>Hide
+                </button>
+              </div>
+              <div><i class="fa-solid fa-globe text-teal-400 mr-1"></i>Continent: <strong class="text-white">${targetMeta ? targetMeta.continent : 'Global'}</strong></div>
+              <div><i class="fa-solid fa-map-location-dot text-amber-400 mr-1"></i>Subregion: <strong class="text-amber-300">${targetMeta ? targetMeta.subregion : 'Global'}</strong></div>
+            </div>
+          `}
+
+          <div class="text-[11px] text-slate-300 space-y-1">
+            ${!gameOver ? `
+              <div class="flex items-center space-x-1.5 text-amber-300 font-semibold">
+                <i class="fa-solid fa-hand-pointer animate-bounce"></i>
+                <span>Click its country of origin & press Lock In!</span>
+              </div>
+            ` : `
+              <div class="glass-card p-2 rounded-lg border ${gameWon ? 'border-rose-500/50 bg-rose-950/40 text-rose-300' : 'border-red-500/50 bg-red-950/40 text-red-300'} text-xs font-bold text-center">
+                ${gameWon ? `Delicious! ${targetFood.name} originated in <strong>${targetName}</strong>!` : `Game Over! ${targetFood.name} originated in <strong>${targetName}</strong>.`}
               </div>
             `}
           </div>
@@ -3176,6 +3484,31 @@
         }
 
         renderLandmarkerSidebar();
+      } else if (gameMode === 'seconds') {
+        secondsGuessesLeft = 3;
+        secondsGuesses = [];
+        isSecondsHintRevealed = false;
+
+        const randIdx = Math.floor(Math.random() * FOODS_DATABASE.length);
+        targetFood = FOODS_DATABASE[randIdx];
+
+        if (geoData.length > 0) {
+          targetCountryFeature = geoData.find(f => {
+            const iso3 = getCountryIso3(f);
+            const iso2 = getCountryIso2(f).toUpperCase();
+            const name = getFeatureName(f).toLowerCase();
+            const targetC = targetFood.country.toUpperCase();
+            return iso3 === targetC || iso2 === targetC || name === targetFood.country.toLowerCase();
+          }) || null;
+          targetMeta = targetCountryFeature ? extractCountryMeta(targetCountryFeature) : null;
+        }
+
+        if (worldGlobe) {
+          worldGlobe.htmlElementsData([]);
+          worldGlobe.pointsData([]);
+        }
+
+        renderSecondsSidebar();
       } else if (gameMode === 'dontapply') {
         dontApplyRoundIndex = 0;
         dontApplyStrikesLeft = 5;
@@ -3661,7 +3994,7 @@
               return 'rgba(30, 41, 59, 0.85)';
             }
 
-            if (gameMode === 'flagged' || gameMode === 'landmarker') {
+            if (gameMode === 'flagged' || gameMode === 'landmarker' || gameMode === 'seconds') {
               if (d === selectedFeature) return 'rgba(245, 158, 11, 0.95)';
               if (wrongGuesses.has(d)) return 'rgba(239, 68, 68, 0.85)';
               if (gameOver && d === targetCountryFeature) return 'rgba(16, 185, 129, 0.95)';
@@ -4141,6 +4474,89 @@
               }
             }
 
+            if (gameMode === 'seconds') {
+              if (!selectedFeature || !targetCountryFeature || !targetFood) return;
+
+              const selName = getFeatureName(selectedFeature);
+              const targetName = getFeatureName(targetCountryFeature);
+              const isCorrect = (selectedFeature === targetCountryFeature) || 
+                (selName !== "Unknown" && targetName !== "Unknown" && selName.toLowerCase() === targetName.toLowerCase());
+
+              const center = getFeatureCentroid(targetCountryFeature);
+
+              if (isCorrect) {
+                gameOver = true;
+                gameWon = true;
+                sounds.playWin();
+
+                if (worldGlobe) {
+                  worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.5 }, 1200);
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                }
+
+                if (window.confetti) confetti({ particleCount: 110, spread: 70, origin: { y: 0.6 } });
+
+                showFeedbackToast(`<i class="fa-solid fa-trophy text-amber-400 mr-1"></i> Bon Appétit! <strong>${targetFood.name}</strong> originated in <strong>${targetName}</strong>!`, 'win');
+
+                const winTextContainer = document.getElementById('win-text-container');
+                if (winTextContainer) {
+                  winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-rose-300 border border-rose-500/50 shadow-2xl flex items-center space-x-2";
+                  winTextContainer.innerHTML = `<span><i class="fa-solid fa-utensils text-rose-400 mr-1"></i> Correct! ${targetFood.name} originated in <strong class="underline font-bold">${targetName}</strong>!</span>`;
+                }
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                renderSecondsSidebar();
+                revealPlayAnother();
+                return;
+
+              } else {
+                sounds.playWrong();
+                wrongGuesses.add(selectedFeature);
+                secondsGuesses.push(selName);
+                secondsGuessesLeft--;
+                selectedFeature = null;
+
+                const lockBox = document.getElementById('lock-container');
+                if (lockBox) {
+                  lockBox.style.display = 'none';
+                  lockBox.classList.remove('scale-100', 'opacity-100');
+                  lockBox.classList.add('hidden', 'scale-75', 'opacity-0');
+                }
+
+                if (secondsGuessesLeft > 0) {
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Incorrect! ${targetFood.name} did not originate in ${selName}. (${secondsGuessesLeft} tries left)`, 'wrong');
+                  renderSecondsSidebar();
+                  worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                } else {
+                  gameOver = true;
+                  gameWon = false;
+
+                  if (worldGlobe) {
+                    worldGlobe.pointOfView({ lat: center.lat, lng: center.lng, altitude: 1.5 }, 1200);
+                    worldGlobe.polygonsData(getPolygonsForCurrentMode());
+                  }
+
+                  showFeedbackToast(`<i class="fa-solid fa-circle-xmark text-red-400 mr-1"></i> Out of tries! ${targetFood.name} originated in <strong>${targetName}</strong>.`, 'wrong');
+
+                  const winTextContainer = document.getElementById('win-text-container');
+                  if (winTextContainer) {
+                    winTextContainer.className = "glass-panel px-4 py-1.5 rounded-full text-xs font-black text-red-400 border border-red-500/50 shadow-2xl flex items-center space-x-2";
+                    winTextContainer.innerHTML = `<span><i class="fa-solid fa-utensils text-rose-400 mr-1"></i> Out of tries! It originated in <strong class="underline font-bold">${targetName}</strong></span>`;
+                  }
+
+                  renderSecondsSidebar();
+                  revealPlayAnother();
+                }
+                return;
+              }
+            }
+
             if (gameMode === 'flagged') {
               if (!selectedFeature || !targetCountryFeature) return;
 
@@ -4481,6 +4897,7 @@
       const btnLandmarker = document.getElementById('mode-landmarker');
       const btnTimeZoner = document.getElementById('mode-timezoner');
       const btnHigherLower = document.getElementById('mode-higherlower');
+      const btnSeconds = document.getElementById('mode-seconds');
 
       if (modeBtn && modeMenu) {
         modeBtn.addEventListener('click', (e) => {
@@ -4495,12 +4912,12 @@
         });
 
         const resetMenuStyles = () => {
-          [btnGuesser, btnHotCold, btnTrivia, btnImpact, btnSpeedState, btnChained, btnFlagged, btnDontApply, btnCountryLink, btnLandmarker, btnTimeZoner, btnHigherLower].forEach(btn => {
+          [btnGuesser, btnHotCold, btnTrivia, btnImpact, btnSpeedState, btnChained, btnFlagged, btnDontApply, btnCountryLink, btnLandmarker, btnTimeZoner, btnHigherLower, btnSeconds].forEach(btn => {
             if (btn) btn.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-slate-300 mt-1";
           });
         };
 
-        if (btnGuesser && btnHotCold && btnTrivia && btnImpact && btnSpeedState && btnChained && btnFlagged && btnDontApply && btnCountryLink && btnLandmarker && btnTimeZoner && btnHigherLower) {
+        if (btnGuesser && btnHotCold && btnTrivia && btnImpact && btnSpeedState && btnChained && btnFlagged && btnDontApply && btnCountryLink && btnLandmarker && btnTimeZoner && btnHigherLower && btnSeconds) {
           btnGuesser.addEventListener('click', () => {
             if (gameMode === 'guesser') { modeMenu.classList.add('hidden'); return; }
             gameMode = 'guesser';
@@ -4621,18 +5038,34 @@
             modeMenu.classList.add('hidden');
             startNewRound();
           });
+
+          btnSeconds.addEventListener('click', () => {
+            if (gameMode === 'seconds') { modeMenu.classList.add('hidden'); return; }
+            gameMode = 'seconds';
+            if (modeBadge) modeBadge.textContent = "Seconds";
+            resetMenuStyles();
+            btnSeconds.className = "w-full text-left px-2.5 py-2 rounded-lg text-xs font-semibold flex items-center space-x-2 hover:bg-slate-800/80 transition text-rose-300 bg-rose-950/40 mt-1";
+            modeMenu.classList.add('hidden');
+            startNewRound();
+          });
         }
       }
 
       window.addEventListener('resize', () => {
-        if (worldGlobe) {
-          worldGlobe.width(globeDiv.clientWidth);
-          worldGlobe.height(globeDiv.clientHeight);
+        if (worldGlobe && globeDiv) {
+          const rect = globeDiv.getBoundingClientRect();
+          const w = rect.width || globeDiv.clientWidth || window.innerWidth;
+          const h = rect.height || globeDiv.clientHeight || window.innerHeight;
+          worldGlobe.width(w).height(h);
         }
       });
     }
 
-    window.onload = initApp;
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
   </script>
 </body>
 </html>
